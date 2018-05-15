@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		74781793CACBC7DA5C4668D2 /* Pods_MultipleCardTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FDDFBF6DE7B8054CA9F4650 /* Pods_MultipleCardTest.framework */; };
+		7C27BD7820AA87F40082288C /* MFBPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7720AA87F40082288C /* MFBPath.swift */; };
 		7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */; };
 		7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82720A8FFEA0049F987 /* ViewController.swift */; };
 		7CA6F82B20A8FFEA0049F987 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7CA6F82920A8FFEA0049F987 /* Main.storyboard */; };
@@ -29,6 +30,7 @@
 /* Begin PBXFileReference section */
 		4483EC65E904268662F79F2F /* Pods-MultipleCardTest.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultipleCardTest.release.xcconfig"; path = "Pods/Target Support Files/Pods-MultipleCardTest/Pods-MultipleCardTest.release.xcconfig"; sourceTree = "<group>"; };
 		5D9FE025DD0FC2CADBB64810 /* Pods-MultipleCardTest.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultipleCardTest.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MultipleCardTest/Pods-MultipleCardTest.debug.xcconfig"; sourceTree = "<group>"; };
+		7C27BD7720AA87F40082288C /* MFBPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFBPath.swift; sourceTree = "<group>"; };
 		7CA6F82220A8FFEA0049F987 /* MultipleCardTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultipleCardTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7CA6F82720A8FFEA0049F987 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -106,6 +108,7 @@
 				7CA6F84620A91F010049F987 /* CardModel.swift */,
 				7CA6F84820A920C90049F987 /* StyleGuide.swift */,
 				7CA6F84A20A923950049F987 /* CardCell.swift */,
+				7C27BD7720AA87F40082288C /* MFBPath.swift */,
 				7CA6F84320A9025A0049F987 /* Misc */,
 				7CA6F82920A8FFEA0049F987 /* Main.storyboard */,
 				7CA6F82C20A8FFEB0049F987 /* Assets.xcassets */,
@@ -256,6 +259,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				7C27BD7820AA87F40082288C /* MFBPath.swift in Sources */,
 				7CA6F83E20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift in Sources */,
 				7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */,
 				7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */,
