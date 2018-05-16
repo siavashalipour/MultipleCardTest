@@ -8,6 +8,7 @@
 
 import UIKit
 import CoreBluetooth
+import RxBluetoothKit
 
 struct Constant {
     
@@ -86,8 +87,18 @@ struct Constant {
         static let LED = "2A14"
         static let findMonitorParameters = "2A06"
     }
-    
+}
 
+enum DeviceService: String, ServiceIdentifier {
+    case deviceInformation = "180A"
+    case battery = "180F"
+    case ota = "FEF5"
+    case safedome = "AAA0"
+    case ia = "1802"
+    
+    var uuid: CBUUID {
+        return CBUUID(string: self.rawValue)
+    }
 }
 
 struct CardParameters {

@@ -56,24 +56,3 @@ struct MFSFindMonitorParameters {
 }
 
 
-enum DeviceCharacteristic: String, CharacteristicIdentifier {
-    case manufacturerName = "2A29"
-    
-    var uuid: CBUUID {
-        return CBUUID(string: self.rawValue)
-    }
-    //Service to which characteristic belongs
-    var service: ServiceIdentifier {
-        switch self {
-        case .manufacturerName:
-            return DeviceService.deviceInformation
-        }
-    }
-}
-enum DeviceService: String, ServiceIdentifier {
-    case deviceInformation = "180A"
-    
-    var uuid: CBUUID {
-        return CBUUID(string: self.rawValue)
-    }
-}

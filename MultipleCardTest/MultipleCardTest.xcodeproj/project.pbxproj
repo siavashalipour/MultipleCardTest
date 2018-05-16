@@ -16,6 +16,7 @@
 		7C27BD8320AAB29A0082288C /* PeripheralServicesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8220AAB29A0082288C /* PeripheralServicesViewModel.swift */; };
 		7C27BD8520AAB2BA0082288C /* CharacteristicsViewModelType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8420AAB2BA0082288C /* CharacteristicsViewModelType.swift */; };
 		7C27BD8720AAB2D10082288C /* CharacteristicsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8620AAB2D10082288C /* CharacteristicsViewModel.swift */; };
+		7C27BD8920ABCE310082288C /* MFServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8820ABCE310082288C /* MFServices.swift */; };
 		7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */; };
 		7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82720A8FFEA0049F987 /* ViewController.swift */; };
 		7CA6F82B20A8FFEA0049F987 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7CA6F82920A8FFEA0049F987 /* Main.storyboard */; };
@@ -45,6 +46,7 @@
 		7C27BD8220AAB29A0082288C /* PeripheralServicesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralServicesViewModel.swift; sourceTree = "<group>"; };
 		7C27BD8420AAB2BA0082288C /* CharacteristicsViewModelType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacteristicsViewModelType.swift; sourceTree = "<group>"; };
 		7C27BD8620AAB2D10082288C /* CharacteristicsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacteristicsViewModel.swift; sourceTree = "<group>"; };
+		7C27BD8820ABCE310082288C /* MFServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFServices.swift; sourceTree = "<group>"; };
 		7CA6F82220A8FFEA0049F987 /* MultipleCardTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultipleCardTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7CA6F82720A8FFEA0049F987 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -155,6 +157,7 @@
 				7CA6F83D20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift */,
 				7CA6F83F20A901FA0049F987 /* Characteristic+Hashable.swift */,
 				7CA6F84120A902210049F987 /* Constant.swift */,
+				7C27BD8820ABCE310082288C /* MFServices.swift */,
 				7CA6F84420A91AB70049F987 /* Data+utils.swift */,
 				7C27BD7920AA92660082288C /* CardMisc.swift */,
 			);
@@ -290,6 +293,7 @@
 			files = (
 				7C27BD7F20AAB26B0082288C /* ScanResultsViewModel.swift in Sources */,
 				7C27BD7820AA87F40082288C /* MFBPath.swift in Sources */,
+				7C27BD8920ABCE310082288C /* MFServices.swift in Sources */,
 				7CA6F83E20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift in Sources */,
 				7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */,
 				7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */,
