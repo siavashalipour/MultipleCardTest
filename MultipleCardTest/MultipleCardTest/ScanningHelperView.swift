@@ -50,16 +50,21 @@ final class ScanningHelperView: UIView {
     }
     
     func shouldShowConnected(_ connected: Bool) {
-        if connected {
-            spinner.stopAnimating()
-        }
-        spinner.isHidden = connected
-        title.isHidden = !connected
-        if connected {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
-                self.isHidden = true
+        DispatchQueue.main.async {
+            if connected {
+                self.spinner.stopAnimating()
+            } else {
+                self.spinner.startAnimating()
+            }
+            self.spinner.isHidden = connected
+            self.title.isHidden = !connected
+            if connected {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+                    self.isHidden = true
+                }
             }
         }
+
 
     }
 }

@@ -86,13 +86,26 @@ struct Constant {
         static let LED = "2A14"
         static let findMonitorParameters = "2A06"
     }
+    
+
 }
 
+struct CardParameters {
+    static var kMFSConnectionParameters = MFSConnectionParameters(minimumConnectionInterval: 10, maximumConnectionInterval: 30, slaveLatency: 1, connectionSupervisionTimeout: 200)
+
+    static var kMFSFSMParameters = MFSFSMParameters(commissioned: 1, fsmBehaviour: 0, fsmConnectedTime: 0, fsmAdvertiseTimeShort: 80, fsmAdvertiseTimeLong: 80, fsmInactiveTime: 1, fsmAdvertisingIntervalShort: 2056, fsmAdvertisingIntervalLong: 2056, ledBrightness: 100)
+
+    static var kDecommissionFSMParameters = MFSFSMParameters(commissioned: 0, fsmBehaviour: 0, fsmConnectedTime: 0, fsmAdvertiseTimeShort: 80, fsmAdvertiseTimeLong: 80, fsmInactiveTime: 1, fsmAdvertisingIntervalShort: 2056, fsmAdvertisingIntervalLong: 2056, ledBrightness: 100)
+    
+    static var kMFSFindMonitorParameters = MFSFindMonitorParameters(toneValue: 2)
+
+}
 struct PathHelper {
     static func firmwareVersionPath() -> MFBPath {
         let service = CBUUID.init(string: Constant.CardPeripheralUUID.deviceInformationService)
         let char = CBUUID.init(string: Constant.CardPeripheralUUID.firmwareVersion)
         return MFBPath(characteristicUUID: char, serviceUUID: service)
+        
     }
     static func batteryValuePath() -> MFBPath {
         let service = CBUUID.init(string: Constant.CardPeripheralUUID.batteryService)

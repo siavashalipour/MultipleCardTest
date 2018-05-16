@@ -7,6 +7,7 @@
 //
 
 import UIKit
+import Foundation
 import RxCocoa
 import RxSwift
 import RxBluetoothKit
@@ -16,13 +17,13 @@ import RealmSwift
 
 class ViewController: UIViewController {
 
-    let manager = CentralManager(queue: .main, options: [CBCentralManagerOptionRestoreIdentifierKey: "some.unique.key" as AnyObject])
+//    let manager = CentralManager(queue: .main, options: [CBCentralManagerOptionRestoreIdentifierKey: "some.unique.key" as AnyObject])
     let kRSSIThreshold: Double = -60
-    private var scanningDisposable: Disposable?
-    private var peripheralDisposable: Disposable!
+    let bleKit = RxBluetoothKitService()
+    private let disposeBag = DisposeBag()
+
     
     private var isScanning: Bool = false
-    private var peripheralConnections: [String: Disposable] = [:]
     
     private lazy var settingBtn: UIButton = {
         let btn = UIButton()
@@ -68,7 +69,6 @@ class ViewController: UIViewController {
     }()
     private lazy var spinner: UIActivityIndicatorView = {
         let spinner = UIActivityIndicatorView.init(activityIndicatorStyle: UIActivityIndicatorViewStyle.gray)
-        spinner.startAnimating()
         spinner.hidesWhenStopped = true
         return spinner
     }()
@@ -83,8 +83,7 @@ class ViewController: UIViewController {
         NotificationCenter.default.addObserver(self, selector: #selector(applicationWillTerminate), name: NSNotification.Name.UIApplicationWillTerminate, object: nil)
         setupUI()
         setupDS()
-        reconnect()
-        spinner.startAnimating()
+        binding()
     }
     private func setupUI() {
         view.addSubview(settingBtn)
@@ -132,46 +131,108 @@ class ViewController: UIViewController {
     }
     
     @objc private func showSetting() {
+        
+    }
+    private func binding() {
+        // bind scanning
+        bleKit.scanningOutput.subscribe(onNext: { (result) in
+            switch result {
+            case .success(let scanned):
+                self.bleKit.discoverServices(for: scanned.peripheral)
+                break
+            case .error(let error):
+                print("scannin error: \(error)")
+                self.scanningHelperView.shouldShowConnected(true)
+            }
+        }, onError: { (error) in
+            print("!scannin error: \(error)")
+            self.scanningHelperView.shouldShowConnected(true)
+        }).disposed(by: disposeBag)
+        
+        // bind discovery
+        bleKit.discoveredServicesOutput.subscribe(onNext: { (result) in
+            switch result {
+            case .success(let services):
+                _ = services.map({ (service) in
+                    print("Found \(service) for \(service.peripheral.identifier)")
 
+                })
+                self.scanningHelperView.shouldShowConnected(true)
+                print("Connected to: \(services.first?.peripheral.identifier)")
+                self.add(peripheral: services.first?.peripheral)
+                break
+            case .error(let error):
+                print("Discovery error: \(error)")
+                self.scanningHelperView.shouldShowConnected(true)
+                break
+            }
+        }, onError: { (error) in
+            print("!Discovery error: \(error)")
+            self.scanningHelperView.shouldShowConnected(true)
+        }).disposed(by: disposeBag)
+        
+        // bind charactrestics
+        bleKit.discoveredCharacteristicsOutput.subscribe(onNext: { (result) in
+            switch result {
+            case .success(let characteristic):
+                break
+            case .error(let error):
+                break
+            }
+        }, onError: { (error) in
+            print("Character discovery error: \(error)")
+        }).disposed(by: disposeBag)
+        
+        bleKit.disconnectionReasonOutput.subscribe(onNext: { (result) in
+            switch result {
+            case .success(let peripheral):
+                print("disconnected from \(peripheral.0.identifier)")
+            case .error(let error):
+                print("Disconnection error: \(error)")
+            }
+        }, onError: { (error) in
+            print("!Disconnection error: \(error)")
+        }).disposed(by: disposeBag)
     }
     @objc func startScanning() {
+        bleKit.stopScanning()
         scanningHelperView.isHidden = false
         scanningHelperView.shouldShowConnected(false)
-        if isScanning {
-            if let scanningDisposable = scanningDisposable {
-                scanningDisposable.dispose()
-            }
-        }
-        self.scanningDisposable = self.manager.scanForPeripherals(withServices: nil)
-            .subscribe(onNext: { (scanned) in
-                //Sends through the first MFSCardPeripheral that advertises due to button press with RSSI > kRSSIThreshold
-                let shouldConnect = scanned.advertisementData.advertisementData["kCBAdvDataLocalName"] as? String == "safedome" && scanned.rssi.doubleValue > self.kRSSIThreshold
-                if shouldConnect && scanned.peripheral.state != CBPeripheralState.connected {
-                    self.peripheralDisposable = scanned.peripheral.establishConnection().take(1).timeout(40, scheduler: MainScheduler.asyncInstance)
-                        .subscribe(onNext: { (peripheral) in
-                            print("Connected to: \(peripheral)")
-                            self.scanningHelperView.shouldShowConnected(true)
-                            self.add(peripheral: scanned.peripheral)
-                        }, onError: { (error) in
-                            print("!!! error: \(error)")
-                            self.scanningHelperView.shouldShowConnected(true)
-                        })
-                }
-                
-            })
+//        if let scanningDisposable = scanningDisposable {
+//            scanningDisposable.dispose()
+//        }
+        bleKit.startScanning()
+//        self.scanningDisposable = self.manager.scanForPeripherals(withServices: nil)
+//            .subscribe(onNext: { (scanned) in
+//                //Sends through the first MFSCardPeripheral that advertises due to button press with RSSI > kRSSIThreshold
+//                let shouldConnect = scanned.advertisementData.advertisementData["kCBAdvDataLocalName"] as? String == "safedome" && scanned.rssi.doubleValue > self.kRSSIThreshold
+//                if shouldConnect && scanned.peripheral.state != CBPeripheralState.connected {
+//                    self.peripheralDisposable = scanned.peripheral.establishConnection().take(1).timeout(40, scheduler: MainScheduler.asyncInstance)
+//                        .subscribe(onNext: { (peripheral) in
+//                            print("Connected to: \(peripheral)")
+//                            self.scanningHelperView.shouldShowConnected(true)
+//                            self.add(peripheral: scanned.peripheral)
+//
+//                        }, onError: { (error) in
+//                            print("!!! error: \(error)")
+//                            self.scanningHelperView.shouldShowConnected(true)
+//                        })
+//                }
+//
+//            })
         
         isScanning = !isScanning
     }
     private func reconnect() {
-        _ = manager.observeState().subscribe(onNext: { (state) in
-            switch state {
-            case .poweredOn:
-                self.establishConnections()
-                self.isScanning = true
-            default:
-                break
-            }
-        })
+//        _ = manager.observeState().subscribe(onNext: { (state) in
+//            switch state {
+//            case .poweredOn:
+//                self.establishConnections()
+//                self.isScanning = true
+//            default:
+//                break
+//            }
+//        })
 
     }
     private func establishConnections() {
@@ -186,25 +247,24 @@ class ViewController: UIViewController {
                     uuids.append(aUUID)
                 }
             }
-
-            let peripherals = manager.retrievePeripherals(withIdentifiers: uuids)
-            var connection: [Disposable] = []
-            for peripheral in peripherals {
-                 let aConnection = peripheral.establishConnection()
-                    .timeout(30, scheduler: MainScheduler.asyncInstance)
-                    .subscribe(onNext: { (peripheral) in
-                        print("reConnected to: \(peripheral)")
-                        self.scanningHelperView.shouldShowConnected(true)
-                        self.add(peripheral: peripheral)
-                        self.spinner.stopAnimating()
-                    }, onError: { (error) in
-                        print("!!! \(error)")
-                        self.spinner.stopAnimating()
-                    }, onCompleted: {
-                        print("!!! Done")
-                    })
-                connection.append(aConnection)
-            }
+//            let peripherals = manager.retrievePeripherals(withIdentifiers: uuids)
+//            var connection: [Disposable] = []
+//            for peripheral in peripherals {
+//                 let aConnection = peripheral.establishConnection()
+//                    .timeout(30, scheduler: MainScheduler.asyncInstance)
+//                    .subscribe(onNext: { (peripheral) in
+//                        print("reConnected to: \(peripheral)")
+//                        self.scanningHelperView.shouldShowConnected(true)
+//                        self.add(peripheral: peripheral)
+//                        self.spinner.stopAnimating()
+//                    }, onError: { (error) in
+//                        print("!!! \(error)")
+//                        self.spinner.stopAnimating()
+//                    }, onCompleted: {
+//                        print("!!! Done")
+//                    })
+//                connection.append(aConnection)
+//            }
 //            _ = connection.map({
 //                $0.dispose()
 //            })
@@ -285,17 +345,13 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
             if indexPath.row > self.ds.count {
                 return
             }
-            let uuid = "\(self.ds[indexPath.row].uuid)"
             
-            self.manager.centralManager.cancelPeripheralConnection(self.ds[indexPath.row].peripheral!.peripheral)
+            if let peripheral = self.ds[indexPath.row].peripheral {
+                self.bleKit.disconnect(peripheral)
+            }
+            
             self.ds.remove(at: indexPath.row)
             tableView.reloadData()
-            self.peripheralDisposable?.dispose()
-            guard let disposable = self.peripheralConnections[uuid] else {
-                return
-            }
-            disposable.dispose()
-            self.peripheralConnections[uuid] = nil
             
         }
         

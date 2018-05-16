@@ -10,6 +10,7 @@ import Foundation
 import RxBluetoothKit
 import RxSwift
 import RxCocoa
+import CoreBluetooth
 
 // RxBluetoothKitService is a class encapsulating logic for most operations you might want to perform
 // on a CentralManager object. Here you can see an example usage of such features as scanning for peripherals,
@@ -18,7 +19,7 @@ import RxCocoa
 final class RxBluetoothKitService {
     
     typealias Disconnection = (Peripheral, DisconnectionReason?)
-    
+    private let kRSSIThreshold: Double = -60
     // MARK: - Public outputs
     
     var scanningOutput: Observable<Result<ScannedPeripheral, Error>> {
@@ -49,6 +50,10 @@ final class RxBluetoothKitService {
         return updatedValueAndNotificationSubject.asObservable()
     }
     
+//    var reConnectionOutput: Observable<Result<Peripheral, Error>> {
+//        return reConnectionSubject.share(replay: 1, scope: .forever).asObservable()
+//    }
+    
     // MARK: - Private subjects
     
     private let discoveredCharacteristicsSubject = PublishSubject<Result<[Characteristic], Error>>()
@@ -65,9 +70,11 @@ final class RxBluetoothKitService {
     
     private let updatedValueAndNotificationSubject = PublishSubject<Result<Characteristic, Error>>()
     
+//    private let reConnectionSubject = PublishSubject<Result<Peripheral, Error>>()
+    
     // MARK: - Private fields
     
-    private let centralManager = CentralManager(queue: .main)
+    private let centralManager = CentralManager(queue: .main, options: [CBCentralManagerOptionRestoreIdentifierKey: "some.very.unique.key" as AnyObject])
     
     private let scheduler: ConcurrentDispatchQueueScheduler
     
@@ -94,31 +101,51 @@ final class RxBluetoothKitService {
     // that you use .startWith(:_) operator, and pass the initial state of your CentralManager with
     // centralManager.state.
     func startScanning() {
+        if let scanningDisposable = scanningDisposable {
+            scanningDisposable.dispose()
+        }
         scanningDisposable = centralManager.observeState()
             .startWith(centralManager.state)
             .filter {
                 $0 == .poweredOn
             }
             .subscribeOn(MainScheduler.instance)
-            .timeout(4.0, scheduler: scheduler)
+            .timeout(40.0, scheduler: scheduler)
             .flatMap { [weak self] _ -> Observable<ScannedPeripheral> in
                 guard let `self` = self else {
                     return Observable.empty()
                 }
                 return self.centralManager.scanForPeripherals(withServices: nil)
             }.subscribe(onNext: { [weak self] scannedPeripheral in
-                print("!!\(scannedPeripheral.advertisementData.advertisementData)")
-
-                self?.scanningSubject.onNext(Result.success(scannedPeripheral))
+                let canConnect = scannedPeripheral.advertisementData.advertisementData["kCBAdvDataLocalName"] as? String == "safedome" && scannedPeripheral.rssi.doubleValue > (self?.kRSSIThreshold)!
+                    
+                if canConnect && scannedPeripheral.peripheral.state != .connected {
+                    self?.scanningSubject.onNext(Result.success(scannedPeripheral))
+                }
                 }, onError: { [weak self] error in
                     self?.scanningSubject.onNext(Result.error(error))
             })
     }
-    
+    func establishReConnection(for uuid: UUID) {
+        _ = centralManager.observeState().timeout(30, scheduler: MainScheduler.asyncInstance).retry(5)
+            .subscribe(onNext: { (state) in
+                if state == .poweredOn {
+                    let peripherals = self.centralManager.retrievePeripherals(withIdentifiers: [uuid])
+                    for peripheral in peripherals {
+                        self.discoverServices(for: peripheral)
+                    }
+                } else {
+                    
+                }
+            }, onError: { (error) in
+                self.discoveredServicesSubject.onNext(Result.error(error))
+            })
+    }
     // If you wish to stop scanning for peripherals, you need to dispose the Disposable object, created when
     // you either subscribe for events from an observable returned by centralManager.scanForPeripherals(:_), or you bind
     // an observer to it. Check starScanning() above for details.
     func stopScanning() {
+        guard let scanningDisposable = scanningDisposable else { return }
         scanningDisposable.dispose()
     }
     
@@ -138,8 +165,12 @@ final class RxBluetoothKitService {
                 .flatMap { $0.discoverServices(nil) }
         }
         let observable = isConnected ? connectedObservableCreator(): connectObservableCreator()
-        let disposable = observable.subscribe(onNext: { [weak self] services in
+        let disposable = observable.timeout(40, scheduler: MainScheduler.asyncInstance)
+            .subscribe(onNext: { [weak self] services in
             self?.discoveredServicesSubject.onNext(Result.success(services))
+            for service in services {
+                RxBluetoothKitService().discoverCharacteristics(for: service)
+            }
             }, onError: { [weak self] error in
                 self?.discoveredServicesSubject.onNext(Result.error(error))
         })
@@ -161,7 +192,7 @@ final class RxBluetoothKitService {
         disposable.dispose()
         peripheralConnections[peripheral] = nil
     }
-    
+
     // MARK: - Discovering Characteristics
     func discoverCharacteristics(for service: Service) {
         service.discoverCharacteristics(nil).subscribe(onSuccess: { [unowned self] characteristics in
