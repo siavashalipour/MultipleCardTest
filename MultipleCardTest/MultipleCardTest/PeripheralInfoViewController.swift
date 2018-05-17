@@ -16,7 +16,7 @@ final class PeripheralInfoViewController: UIViewController {
     
     var peripheral: Peripheral! {
         didSet {
-            title = peripheral.name
+            title = "\(peripheral.peripheral.identifier)"
             fetchData()
         }
     }
@@ -72,6 +72,13 @@ final class PeripheralInfoViewController: UIViewController {
         view.isHidden = false
         return view
     }()
+    
+    private lazy var spinner: UIActivityIndicatorView = {
+        let spinner = UIActivityIndicatorView.init(activityIndicatorStyle: UIActivityIndicatorViewStyle.gray)
+        spinner.hidesWhenStopped = true
+        return spinner
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
@@ -183,66 +190,102 @@ final class PeripheralInfoViewController: UIViewController {
     private func writeFastConnectionParameters() { 
         var a = CardParameters.kFastConnectionParameters
         let data = NSData.init(bytes: &a, length: Int(kSizeofMFSConnectionParameters))
-        
+        spinner.startAnimating()
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
             print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
         }) { (error) in
             print("!!!! error writing \(data) with error: \(error)")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
         }.disposed(by: disposeBag)
     }
     
     private func writeDefaultConnectionParameters() { // commissioning
         var a = CardParameters.kDefaultConnectionParameters
         let data = NSData.init(bytes: &a, length: Int(kSizeofMFSConnectionParameters))
-        
+        spinner.startAnimating()
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
             print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
         }) { (error) in
             print("!!!! error writing \(data) with error: \(error)")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
             }.disposed(by: disposeBag)
     }
     
     private func writeFSMParameters() {
         var a = CardParameters.kDefaultFSMParameters
         let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
-        
+        spinner.startAnimating()
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
             print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
         }) { (error) in
             print("!!!! error writing \(data) with error: \(error)")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
             }.disposed(by: disposeBag)
     }
     
     private func writeFindMonitorParameters() {
         var a = CardParameters.kMFSFindMonitorParameters
         let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFindMonitorParameters))
-        
+        spinner.startAnimating()
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.findMonitorParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
             print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
         }) { (error) in
             print("!!!! error writing \(data) with error: \(error)")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
             }.disposed(by: disposeBag)
     }
     
     private func turnCardOff() {
         var a: UInt8 = UInt8(1)
         let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
-        
+        spinner.startAnimating()
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.cardOff, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
             print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
         }) { (error) in
             print("!!!! error writing \(data) with error: \(error)")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
             }.disposed(by: disposeBag)
     }
     
     private func decommission() {
         var a = CardParameters.kDecommissionFSMParameters
         let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
-        
+        spinner.startAnimating()
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
             print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
         }) { (error) in
             print("!!!! error writing \(data) with error: \(error)")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
             }.disposed(by: disposeBag)
     }
     
