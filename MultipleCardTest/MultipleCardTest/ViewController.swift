@@ -58,7 +58,7 @@ class ViewController: UIViewController {
         tableView.delegate = self
         tableView.separatorColor = nil
         tableView.separatorStyle = .none
-        return tableView
+        return tableView 
     }()
     private lazy var scanningHelperView: ScanningHelperView = {
         let view = ScanningHelperView()
@@ -84,7 +84,7 @@ class ViewController: UIViewController {
         setupUI()
         setupDS()
         binding()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // give the bluetooth states time to get to .poweredOn
             self.reconnect()
         }
     }

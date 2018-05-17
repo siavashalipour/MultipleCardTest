@@ -102,7 +102,7 @@ final class PeripheralInfoViewController: UIViewController {
             make.size.equalTo(CGSize(width: 220, height: 160))
         }
     }
-    
+    // MARK:- Fetching
     private func fetchData() {
         var item: PeripheralInfoCellData = PeripheralInfoCellData(title: "", subtitle: "")
         peripheral.establishConnection().subscribe { (_) in
@@ -186,7 +186,7 @@ final class PeripheralInfoViewController: UIViewController {
         }.disposed(by: disposeBag)
 
     }
-    
+    // MARK:- Writing
     private func writeFastConnectionParameters() { 
         var a = CardParameters.kFastConnectionParameters
         let data = NSData.init(bytes: &a, length: Int(kSizeofMFSConnectionParameters))
