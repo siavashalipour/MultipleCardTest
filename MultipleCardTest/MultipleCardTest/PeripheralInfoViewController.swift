@@ -40,9 +40,9 @@ final class PeripheralInfoViewController: UIViewController {
                                subtitle: "\(NSData.init(bytes: &CardParameters.kMFSFindMonitorParameters, length: Int(kSizeofMFSFindMonitorParameters)))"),
         PeripheralInfoCellData(title: "decommission",
                                subtitle: "\(NSData.init(bytes: &CardParameters.kDecommissionFSMParameters, length: Int(kSizeofMFSFSMParameters)))"),
-        PeripheralInfoCellData(title: "turnCardOff", subtitle: ""),
-        PeripheralInfoCellData(title: "turnOnLED", subtitle: ""),
-        PeripheralInfoCellData(title: "turnOffLED", subtitle: "")
+        PeripheralInfoCellData(title: "turnCardOff", subtitle: "1"),
+        PeripheralInfoCellData(title: "turnOnLED", subtitle: "1"),
+        PeripheralInfoCellData(title: "turnOffLED", subtitle: "0")
     ]
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
@@ -294,11 +294,37 @@ final class PeripheralInfoViewController: UIViewController {
     }
     
     private func turnOnLED() {
-        
+        var a: UInt8 = UInt8(1)
+        let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
+        spinner.startAnimating()
+        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.LED, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
+            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
+        }) { (error) in
+            print("!!!! error writing \(data) with error: \(error)")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
+            }.disposed(by: disposeBag)
     }
     
     private func turnOffLED() {
-        
+        var a: UInt8 = UInt8(0)
+        let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
+        spinner.startAnimating()
+        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.LED, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
+            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
+        }) { (error) in
+            print("!!!! error writing \(data) with error: \(error)")
+            DispatchQueue.main.async {
+                self.spinner.stopAnimating()
+            }
+            }.disposed(by: disposeBag)
     }
 }
 
@@ -335,6 +361,12 @@ extension PeripheralInfoViewController: UITableViewDataSource, UITableViewDelega
             writeFindMonitorParameters()
         case 3:
             decommission()
+        case 4:
+            turnCardOff()
+        case 5:
+            turnOnLED()
+        case 6:
+            turnOffLED()
         default:
             break
         }
