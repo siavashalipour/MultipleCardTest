@@ -17,6 +17,8 @@
 		7C27BD8520AAB2BA0082288C /* CharacteristicsViewModelType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8420AAB2BA0082288C /* CharacteristicsViewModelType.swift */; };
 		7C27BD8720AAB2D10082288C /* CharacteristicsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8620AAB2D10082288C /* CharacteristicsViewModel.swift */; };
 		7C27BD8920ABCE310082288C /* MFServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8820ABCE310082288C /* MFServices.swift */; };
+		7C27BD8B20ABE0AF0082288C /* PeripheralInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */; };
+		7C27BD8D20ABE2260082288C /* PeripheralInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */; };
 		7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */; };
 		7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82720A8FFEA0049F987 /* ViewController.swift */; };
 		7CA6F82B20A8FFEA0049F987 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7CA6F82920A8FFEA0049F987 /* Main.storyboard */; };
@@ -47,6 +49,8 @@
 		7C27BD8420AAB2BA0082288C /* CharacteristicsViewModelType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacteristicsViewModelType.swift; sourceTree = "<group>"; };
 		7C27BD8620AAB2D10082288C /* CharacteristicsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacteristicsViewModel.swift; sourceTree = "<group>"; };
 		7C27BD8820ABCE310082288C /* MFServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFServices.swift; sourceTree = "<group>"; };
+		7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoViewController.swift; sourceTree = "<group>"; };
+		7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoCell.swift; sourceTree = "<group>"; };
 		7CA6F82220A8FFEA0049F987 /* MultipleCardTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultipleCardTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7CA6F82720A8FFEA0049F987 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -133,10 +137,12 @@
 			children = (
 				7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */,
 				7CA6F82720A8FFEA0049F987 /* ViewController.swift */,
+				7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */,
 				7CA6F84C20A929EF0049F987 /* ScanningHelperView.swift */,
 				7CA6F84620A91F010049F987 /* CardModel.swift */,
 				7CA6F84820A920C90049F987 /* StyleGuide.swift */,
 				7CA6F84A20A923950049F987 /* CardCell.swift */,
+				7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */,
 				7C27BD7720AA87F40082288C /* MFBPath.swift */,
 				7C27BD7D20AAB24A0082288C /* Rx */,
 				7CA6F84320A9025A0049F987 /* Misc */,
@@ -294,8 +300,10 @@
 				7C27BD7F20AAB26B0082288C /* ScanResultsViewModel.swift in Sources */,
 				7C27BD7820AA87F40082288C /* MFBPath.swift in Sources */,
 				7C27BD8920ABCE310082288C /* MFServices.swift in Sources */,
+				7C27BD8D20ABE2260082288C /* PeripheralInfoCell.swift in Sources */,
 				7CA6F83E20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift in Sources */,
 				7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */,
+				7C27BD8B20ABE0AF0082288C /* PeripheralInfoViewController.swift in Sources */,
 				7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */,
 				7CA6F84520A91AB70049F987 /* Data+utils.swift in Sources */,
 				7C27BD8320AAB29A0082288C /* PeripheralServicesViewModel.swift in Sources */,

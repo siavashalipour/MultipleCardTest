@@ -9,6 +9,19 @@ import RxBluetoothKit
 import Foundation
 import CoreBluetooth
 
+
+enum DeviceService: String, ServiceIdentifier {
+    case deviceInformation = "180A"
+    case battery = "180F"
+    case ota = "FEF5"
+    case safedome = "AAA0"
+    case ia = "1802"
+    
+    var uuid: CBUUID {
+        return CBUUID(string: self.rawValue)
+    }
+}
+
 enum DeviceCharacteristic: String, CharacteristicIdentifier {
     // Battery Service
     case batteryLevel = "2A19"

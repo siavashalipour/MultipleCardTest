@@ -19,7 +19,7 @@ import CoreBluetooth
 final class RxBluetoothKitService {
     
     typealias Disconnection = (Peripheral, DisconnectionReason?)
-    private let kRSSIThreshold: Double = -60
+    private let kRSSIThreshold: Double = -50
     // MARK: - Public outputs
     
     var scanningOutput: Observable<Result<ScannedPeripheral, Error>> {
@@ -50,9 +50,9 @@ final class RxBluetoothKitService {
         return updatedValueAndNotificationSubject.asObservable()
     }
     
-//    var reConnectionOutput: Observable<Result<Peripheral, Error>> {
-//        return reConnectionSubject.share(replay: 1, scope: .forever).asObservable()
-//    }
+    var reConnectionOutput: Observable<Result<Peripheral, Error>> {
+        return reConnectionSubject.share(replay: 1, scope: .forever).asObservable()
+    }
     
     // MARK: - Private subjects
     
@@ -70,7 +70,7 @@ final class RxBluetoothKitService {
     
     private let updatedValueAndNotificationSubject = PublishSubject<Result<Characteristic, Error>>()
     
-//    private let reConnectionSubject = PublishSubject<Result<Peripheral, Error>>()
+    private let reConnectionSubject = PublishSubject<Result<Peripheral, Error>>()
     
     // MARK: - Private fields
     
@@ -111,6 +111,7 @@ final class RxBluetoothKitService {
             }
             .subscribeOn(MainScheduler.instance)
             .timeout(40.0, scheduler: scheduler)
+            .take(1)
             .flatMap { [weak self] _ -> Observable<ScannedPeripheral> in
                 guard let `self` = self else {
                     return Observable.empty()
@@ -126,20 +127,16 @@ final class RxBluetoothKitService {
                     self?.scanningSubject.onNext(Result.error(error))
             })
     }
-    func establishReConnection(for uuid: UUID) {
-        _ = centralManager.observeState().timeout(30, scheduler: MainScheduler.asyncInstance).retry(5)
-            .subscribe(onNext: { (state) in
-                if state == .poweredOn {
-                    let peripherals = self.centralManager.retrievePeripherals(withIdentifiers: [uuid])
-                    for peripheral in peripherals {
-                        self.discoverServices(for: peripheral)
-                    }
-                } else {
-                    
-                }
+    func tryReconnect(to peripherals: [UUID]) {
+        let peripheralsToReConnect = self.centralManager.retrievePeripherals(withIdentifiers: peripherals)
+        _ = peripheralsToReConnect.map({
+            $0.establishConnection().subscribe(onNext: { (peripheral) in
+                self.reConnectionSubject.onNext(Result.success(peripheral))
             }, onError: { (error) in
-                self.discoveredServicesSubject.onNext(Result.error(error))
-            })
+                self.reConnectionSubject.onNext(Result.error(error))
+            }).disposed(by: disposeBag)
+        })
+        
     }
     // If you wish to stop scanning for peripherals, you need to dispose the Disposable object, created when
     // you either subscribe for events from an observable returned by centralManager.scanForPeripherals(:_), or you bind
@@ -191,6 +188,7 @@ final class RxBluetoothKitService {
         }
         disposable.dispose()
         peripheralConnections[peripheral] = nil
+        centralManager.centralManager.cancelPeripheralConnection(peripheral.peripheral)
     }
 
     // MARK: - Discovering Characteristics
