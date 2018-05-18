@@ -12,3 +12,7 @@ enum Result<T, E> {
     case success(T)
     case error(E)
 }
+
+enum BluetoothServicesError: Error {
+    case peripheralNil
+}

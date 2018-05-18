@@ -16,13 +16,9 @@ import SnapKit
 import RealmSwift
 
 class ViewController: UIViewController {
-
-    let kRSSIThreshold: Double = -60
-    let bleKit = RxBluetoothKitService()
     private let disposeBag = DisposeBag()
-
     
-    private var isScanning: Bool = false
+    private let vm: ViewModel = ViewModel()
     
     private lazy var settingBtn: UIButton = {
         let btn = UIButton()
@@ -58,7 +54,7 @@ class ViewController: UIViewController {
         tableView.delegate = self
         tableView.separatorColor = nil
         tableView.separatorStyle = .none
-        return tableView 
+        return tableView
     }()
     private lazy var scanningHelperView: ScanningHelperView = {
         let view = ScanningHelperView()
@@ -71,19 +67,15 @@ class ViewController: UIViewController {
         spinner.hidesWhenStopped = true
         return spinner
     }()
-    private var ds: [CardModel] = [] {
-        didSet {
-            applicationWillTerminate()
-            scanningHelperView.shouldShowConnected(true)
-        }
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        vm.getPeripheralsIfAny()
     }
-    
     override func viewDidLoad() {
         super.viewDidLoad()
-        NotificationCenter.default.addObserver(self, selector: #selector(applicationWillTerminate), name: NSNotification.Name.UIApplicationWillTerminate, object: nil)
         setupUI()
-        setupDS()
-        binding()
+        startObservingViewModel()
+        vm.bind()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // give the bluetooth states time to get to .poweredOn
             self.reconnect()
         }
@@ -136,156 +128,77 @@ class ViewController: UIViewController {
     @objc private func showSetting() {
         
     }
-    private func binding() {
-        // bind scanning
-        bleKit.scanningOutput.subscribe(onNext: { (result) in
+    private func startObservingViewModel() {
+        vm.dataUpdatedObserver.subscribe(onNext: { (result) in
             switch result {
-            case .success(let scanned):
-//                self.bleKit.discoverServices(for: scanned.peripheral)
-                self.add(peripheral: scanned.peripheral)
-                break
-            case .error(let error):
-                print("scannin error: \(error)")
-                self.scanningHelperView.shouldShowConnected(true)
+            case .success(_):
+                self.reloadTableViewOnMainThread()
+            case .error(_):
+                self.stopLoading()
             }
         }, onError: { (error) in
-            print("!scannin error: \(error)")
-            self.scanningHelperView.shouldShowConnected(true)
+            self.stopLoading()
         }).disposed(by: disposeBag)
         
-        // bind discovery
-        bleKit.discoveredServicesOutput.subscribe(onNext: { (result) in
+        vm.reconnectionObserver.subscribe(onNext: { (result) in
             switch result {
-            case .success(let services):
-                _ = services.map({ (service) in
-                    print("Found \(service) for \(service.peripheral.identifier)")
-
-                })
-                self.scanningHelperView.shouldShowConnected(true)
-                break
-            case .error(let error):
-                print("Discovery error: \(error)")
-                self.scanningHelperView.shouldShowConnected(true)
-                break
+            case .success(_):
+                self.reloadTableViewOnMainThread()
+            case .error(_):
+                self.stopLoading()
             }
         }, onError: { (error) in
-            print("!Discovery error: \(error)")
-            self.scanningHelperView.shouldShowConnected(true)
+            self.stopLoading()
         }).disposed(by: disposeBag)
         
-        bleKit.disconnectionReasonOutput.subscribe(onNext: { (result) in
+        vm.disconnectObserver.subscribe(onNext: { (result) in
             switch result {
-            case .success(let peripheral):
-                print("disconnected from \(peripheral.0.identifier)")
-            case .error(let error):
-                print("Disconnection error: \(error)")
+            case .success(_):
+                self.reloadTableViewOnMainThread()
+            case .error(_):
+                self.stopLoading()
             }
         }, onError: { (error) in
-            print("!Disconnection error: \(error)")
+            self.stopLoading()
         }).disposed(by: disposeBag)
         
-        bleKit.reConnectionOutput.subscribe(onNext: { (result) in
+        vm.readingCardObserver.subscribe(onNext: { (result) in
             switch result {
-            case .success(let peripheral):
-                self.add(peripheral: peripheral)
+            case .success(let isReading):
                 DispatchQueue.main.async {
-                    self.spinner.stopAnimating()
+                    self.scanningHelperView.isHidden = !isReading
+                    if isReading {
+                        self.scanningHelperView.updateSubtitle(to: "reading card data...")
+                    }
+                    
                 }
-            case .error(let error):
-                print("REconnect error: \(error)")
-                DispatchQueue.main.async {
-                    self.spinner.stopAnimating()
-                }
+            case .error(_):
+                break
             }
-        }, onError: { (error) in
-            print("REconnect error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
+        }, onError: { (_) in
+            
         }).disposed(by: disposeBag)
     }
+    private func stopLoading() {
+        DispatchQueue.main.async {
+            self.spinner.stopAnimating()
+        }
+    }
+    private func reloadTableViewOnMainThread() {
+        DispatchQueue.main.async {
+            self.tableView.reloadData()
+        }
+        stopLoading()
+    }
     @objc func startScanning() {
-        bleKit.stopScanning()
+        vm.startScanning()
         scanningHelperView.isHidden = false
         scanningHelperView.shouldShowConnected(false)
         scanningHelperView.updateSubtitle(to: "Scanning...")
-        bleKit.startScanning()
-        isScanning = !isScanning
     }
     private func reconnect() {
-        if let uuidStrings: [String] = UserDefaults.standard.array(forKey: Constant.Strings.uuidsKey) as? [String] {
-            if uuidStrings.count == 0 {
-                spinner.stopAnimating()
-                return
-            }
-            var uuids: [UUID] = []
-            for uuid in uuidStrings {
-                if let aUUID = UUID.init(uuidString: uuid) {
-                    uuids.append(aUUID)
-                }
-            }
-            spinner.startAnimating()
-            bleKit.tryReconnect(to: uuids)
-        }
-    }
-    private func establishConnections() {
-        if let uuidStrings: [String] = UserDefaults.standard.array(forKey: Constant.Strings.uuidsKey) as? [String] {
-            if uuidStrings.count == 0 {
-                spinner.stopAnimating()
-                return
-            }
-            var uuids: [UUID] = []
-            for uuid in uuidStrings {
-                if let aUUID = UUID.init(uuidString: uuid) {
-                    uuids.append(aUUID)
-                }
-            }
-            bleKit.tryReconnect(to: uuids)
-//            let peripherals = manager.retrievePeripherals(withIdentifiers: uuids)
-//            var connection: [Disposable] = []
-//            for peripheral in peripherals {
-//                 let aConnection = peripheral.establishConnection()
-//                    .timeout(30, scheduler: MainScheduler.asyncInstance)
-//                    .subscribe(onNext: { (peripheral) in
-//                        print("reConnected to: \(peripheral)")
-//                        self.scanningHelperView.shouldShowConnected(true)
-//                        self.add(peripheral: peripheral)
-//                        self.spinner.stopAnimating()
-//                    }, onError: { (error) in
-//                        print("!!! \(error)")
-//                        self.spinner.stopAnimating()
-//                    }, onCompleted: {
-//                        print("!!! Done")
-//                    })
-//                connection.append(aConnection)
-//            }
-//            _ = connection.map({
-//                $0.dispose()
-//            })
-        } else {
-            spinner.stopAnimating()
-        }
-    }
-    private func add(peripheral: Peripheral?) {
-        let card = CardModel(cardName: "safedome", uuid: "\(peripheral!.identifier)", isConnected: true, peripheral: peripheral)
-        if !ds.contains(where: {
-            $0.uuid == card.uuid
-        }) {
-            ds.append(card)
-        }
-        tableView.reloadData()
-    }
-    private func setupDS() {
-        // Query and update from any thread
-        self.tableView.reloadData()
-    }
-}
-// MARK: - notification
-extension ViewController {
-    @objc func applicationWillTerminate() {
-        // save the current connected UUIDs
-        let uuids: [String] = ds.map({$0.uuid})
-        UserDefaults.standard.set(uuids, forKey: Constant.Strings.uuidsKey)
+        spinner.startAnimating()
+        vm.reconnect()
     }
 }
 extension ViewController: UITableViewDataSource, UITableViewDelegate {
@@ -293,7 +206,7 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
         return 1
     }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return ds.count
+        return vm.numberOfItems()
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell: CardCell
@@ -302,7 +215,9 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
         } else {
             cell = CardCell()
         }
-        cell.config(with: ds[indexPath.row])
+        if let model = vm.item(at: indexPath) {
+            cell.config(with: model)
+        }
         return cell
     }
     func tableView(_ tableView: UITableView, viewForFooterInSection section: Int) -> UIView? {
@@ -333,29 +248,18 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
 
     func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
         let disconnect = UITableViewRowAction(style: .default, title: "Disconnect") { (action, indexPath) in
-            // share item at indexPath
-
-            if indexPath.row > self.ds.count {
-                return
-            }
-            
-            if let peripheral = self.ds[indexPath.row].peripheral {
-                self.bleKit.disconnect(peripheral)
-            }
-            
-            self.ds.remove(at: indexPath.row)
+            self.vm.disconnect(at: indexPath)
             tableView.reloadData()
-            
         }
-        
         return [disconnect]
         
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        if let peripheral = ds[indexPath.row].peripheral {
+        guard let card = vm.item(at: indexPath) else { return }
+        if let item = vm.realmObject(for: card) {
             let vc = PeripheralInfoViewController()
-            vc.peripheral = peripheral
+            vc.vm = PeripheralInfoViewModel.init(with: item)
             navigationController?.pushViewController(vc, animated: true)
         }
     }

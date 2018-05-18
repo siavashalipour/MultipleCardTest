@@ -8,6 +8,8 @@
 
 /* Begin PBXBuildFile section */
 		74781793CACBC7DA5C4668D2 /* Pods_MultipleCardTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FDDFBF6DE7B8054CA9F4650 /* Pods_MultipleCardTest.framework */; };
+		7C1ADBCB20AE60060008C6D0 /* ViewControllerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1ADBCA20AE60060008C6D0 /* ViewControllerViewModel.swift */; };
+		7C1ADBCD20AE8E580008C6D0 /* PeripheralInfoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1ADBCC20AE8E580008C6D0 /* PeripheralInfoViewModel.swift */; };
 		7C27BD7820AA87F40082288C /* MFBPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7720AA87F40082288C /* MFBPath.swift */; };
 		7C27BD7A20AA92660082288C /* CardMisc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7920AA92660082288C /* CardMisc.swift */; };
 		7C27BD7C20AAB2410082288C /* ScanResultsViewModelType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7B20AAB2410082288C /* ScanResultsViewModelType.swift */; };
@@ -40,6 +42,8 @@
 /* Begin PBXFileReference section */
 		4483EC65E904268662F79F2F /* Pods-MultipleCardTest.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultipleCardTest.release.xcconfig"; path = "Pods/Target Support Files/Pods-MultipleCardTest/Pods-MultipleCardTest.release.xcconfig"; sourceTree = "<group>"; };
 		5D9FE025DD0FC2CADBB64810 /* Pods-MultipleCardTest.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultipleCardTest.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MultipleCardTest/Pods-MultipleCardTest.debug.xcconfig"; sourceTree = "<group>"; };
+		7C1ADBCA20AE60060008C6D0 /* ViewControllerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewControllerViewModel.swift; sourceTree = "<group>"; };
+		7C1ADBCC20AE8E580008C6D0 /* PeripheralInfoViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoViewModel.swift; sourceTree = "<group>"; };
 		7C27BD7720AA87F40082288C /* MFBPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFBPath.swift; sourceTree = "<group>"; };
 		7C27BD7920AA92660082288C /* CardMisc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardMisc.swift; sourceTree = "<group>"; };
 		7C27BD7B20AAB2410082288C /* ScanResultsViewModelType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultsViewModelType.swift; sourceTree = "<group>"; };
@@ -101,6 +105,15 @@
 			name = Pods;
 			sourceTree = "<group>";
 		};
+		7C1ADBCE20AE90A50008C6D0 /* ViewModel */ = {
+			isa = PBXGroup;
+			children = (
+				7C1ADBCA20AE60060008C6D0 /* ViewControllerViewModel.swift */,
+				7C1ADBCC20AE8E580008C6D0 /* PeripheralInfoViewModel.swift */,
+			);
+			path = ViewModel;
+			sourceTree = "<group>";
+		};
 		7C27BD7D20AAB24A0082288C /* Rx */ = {
 			isa = PBXGroup;
 			children = (
@@ -137,6 +150,7 @@
 			children = (
 				7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */,
 				7CA6F82720A8FFEA0049F987 /* ViewController.swift */,
+				7C1ADBCE20AE90A50008C6D0 /* ViewModel */,
 				7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */,
 				7CA6F84C20A929EF0049F987 /* ScanningHelperView.swift */,
 				7CA6F84620A91F010049F987 /* CardModel.swift */,
@@ -319,6 +333,8 @@
 				7CA6F84720A91F010049F987 /* CardModel.swift in Sources */,
 				7CA6F84B20A923950049F987 /* CardCell.swift in Sources */,
 				7C27BD7C20AAB2410082288C /* ScanResultsViewModelType.swift in Sources */,
+				7C1ADBCD20AE8E580008C6D0 /* PeripheralInfoViewModel.swift in Sources */,
+				7C1ADBCB20AE60060008C6D0 /* ViewControllerViewModel.swift in Sources */,
 				7C27BD8120AAB2880082288C /* PeripheralServicesViewModelType.swift in Sources */,
 				7C27BD7A20AA92660082288C /* CardMisc.swift in Sources */,
 			);

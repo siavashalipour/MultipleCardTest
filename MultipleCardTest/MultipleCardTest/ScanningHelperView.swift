@@ -82,6 +82,8 @@ final class ScanningHelperView: UIView {
         }
     }
     func updateSubtitle(to text: String) {
+        spinner.isHidden = false 
         subtitle.text = text
+        subtitle.isHidden = false
     }
 }

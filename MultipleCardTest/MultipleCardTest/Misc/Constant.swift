@@ -38,7 +38,7 @@ struct Constant {
     
     struct Strings {
         static let defaultDispatchQueueLabel = "com.polidea.rxbluetoothkit.timer"
-        static let uuidsKey = "uuidsKey"
+//        static let uuidsKey = "uuidsKey"
         static let scanResultSectionTitle = "Scan Results"
         static let startScanning = "Start scanning"
         static let stopScanning = "Stop scanning"

@@ -14,23 +14,28 @@ import RxSwift
 
 final class PeripheralInfoViewController: UIViewController {
     
-    var peripheral: Peripheral! {
-        didSet {
-            title = "\(peripheral.peripheral.identifier)"
-            fetchData()
-        }
-    }
-    private let disposeBag = DisposeBag()
-    var ds: [PeripheralInfoCellData] = [] {
+    var vm: PeripheralInfoViewModel! {
         didSet {
             tableView.reloadData()
-            scanningHelperView.shouldShowConnected(false)
-            scanningHelperView.updateSubtitle(to: "Connecting...")
-            if ds.count > 3 {
-                scanningHelperView.isHidden = true
-            }
         }
     }
+//    var peripheral: Peripheral! {
+//        didSet {
+//            title = "\(peripheral.peripheral.identifier)"
+//            fetchData()
+//        }
+//    }
+//    private let disposeBag = DisposeBag()
+//    var ds: [PeripheralInfoCellData] = [] {
+//        didSet {
+//            tableView.reloadData()
+//            scanningHelperView.shouldShowConnected(false)
+//            scanningHelperView.updateSubtitle(to: "Connecting...")
+//            if ds.count > 3 {
+//                scanningHelperView.isHidden = true
+//            }
+//        }
+//    }
     var ds2: [PeripheralInfoCellData] = [
         PeripheralInfoCellData(title: "writeFastConnectionParameters",
                                subtitle: "\(NSData.init(bytes: &CardParameters.kFastConnectionParameters, length: Int(kSizeofMFSConnectionParameters)))"),
@@ -69,7 +74,7 @@ final class PeripheralInfoViewController: UIViewController {
     private lazy var scanningHelperView: ScanningHelperView = {
         let view = ScanningHelperView()
         view.backgroundColor = #colorLiteral(red: 0.4745098054, green: 0.8392156959, blue: 0.9764705896, alpha: 1)
-        view.isHidden = false
+        view.isHidden = true
         return view
     }()
     
@@ -102,230 +107,6 @@ final class PeripheralInfoViewController: UIViewController {
             make.size.equalTo(CGSize(width: 220, height: 160))
         }
     }
-    // MARK:- Fetching
-    private func fetchData() {
-        var item: PeripheralInfoCellData = PeripheralInfoCellData(title: "", subtitle: "")
-        peripheral.establishConnection().subscribe { (_) in
-            self.scanningHelperView.shouldShowConnected(false)
-            self.scanningHelperView.updateSubtitle(to: "Connecting...")
-            self.peripheral.readValue(for: DeviceCharacteristic.MACAddress)
-                .subscribe(onSuccess: { (char) in
-                    if let value = char.characteristic.value {
-                        let str = value.hexadecimalString
-                        var macAddress = ""
-                        var i = 0
-                        for char in str {
-                            if i != 0 && i % 2 == 0 {
-                                macAddress.append(":")
-                            }
-                            macAddress.append(char)
-                            i += 1
-                        }
-                        item = PeripheralInfoCellData(title: "MACAddress", subtitle: macAddress)
-                        DispatchQueue.main.async {
-                            self.ds.append(item)
-                        }
-                    }
-                    print(char.characteristic.value!.hexadecimalString)
-                }) { (error) in
-                    print("MAC \(error)")
-                }.disposed(by: self.disposeBag)
-            
-            self.peripheral.readValue(for: DeviceCharacteristic.firmwareRevisionString)
-                .subscribe(onSuccess: { (char) in
-                    if let value = char.characteristic.value {
-                        let firmware = String.init(data: value, encoding: String.Encoding.utf8)
-                        item = PeripheralInfoCellData(title: "Firmware version", subtitle: firmware ?? "wrong encoding")
-                        DispatchQueue.main.async {
-                            self.ds.append(item)
-                        }
-                    }
-                    
-                }) { (error) in
-                    print("Firm \(error)")
-                }.disposed(by: self.disposeBag)
-            self.peripheral.readValue(for: DeviceCharacteristic.batteryLevel)
-                .subscribe(onSuccess: { (char) in
-                    if let value = char.characteristic.value {
-                        item = PeripheralInfoCellData.init(title: "Battery", subtitle: "\(value[0])%")
-                        DispatchQueue.main.async {
-                            self.ds.append(item)
-                        }
-                    }
-                }) { (error) in
-                    print("Bat \(error)")
-                }.disposed(by: self.disposeBag)
-            
-            self.peripheral.readValue(for: DeviceCharacteristic.connectionParameters)
-                .subscribe(onSuccess: { (char) in
-                    if let value = char.characteristic.value {
-                        let str = value.hexadecimalString
-                        item = PeripheralInfoCellData(title: "Connection Params", subtitle: str)
-                        DispatchQueue.main.async {
-                            self.ds.append(item)
-                        }
-                    }
-                    print(char.characteristic.value!.hexadecimalString)
-                }) { (error) in
-                    print("param \(error)")
-                }.disposed(by: self.disposeBag)
-            
-            self.peripheral.readValue(for: DeviceCharacteristic.fsmParameters)
-                .subscribe(onSuccess: { (char) in
-                    if let value = char.characteristic.value {
-                        let str = value.hexadecimalString
-                        item = PeripheralInfoCellData(title: "fsmParameters", subtitle: str)
-                        DispatchQueue.main.async {
-                            self.ds.append(item)
-                        }
-                    }
-                    print(char.characteristic.value!.hexadecimalString)
-                }) { (error) in
-                    print("fsm \(error)")
-                }.disposed(by: self.disposeBag)
-        }.disposed(by: disposeBag)
-
-    }
-    // MARK:- Writing
-    private func writeFastConnectionParameters() { 
-        var a = CardParameters.kFastConnectionParameters
-        let data = NSData.init(bytes: &a, length: Int(kSizeofMFSConnectionParameters))
-        spinner.startAnimating()
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }.disposed(by: disposeBag)
-    }
-    
-    private func writeDefaultConnectionParameters() { // commissioning
-        var a = CardParameters.kDefaultConnectionParameters
-        let data = NSData.init(bytes: &a, length: Int(kSizeofMFSConnectionParameters))
-        spinner.startAnimating()
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-            }.disposed(by: disposeBag)
-    }
-    
-    private func writeFSMParameters() {
-        var a = CardParameters.kDefaultFSMParameters
-        let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
-        spinner.startAnimating()
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-            }.disposed(by: disposeBag)
-    }
-    
-    private func writeFindMonitorParameters() {
-        var a = CardParameters.kMFSFindMonitorParameters
-        let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFindMonitorParameters))
-        spinner.startAnimating()
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.findMonitorParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-            }.disposed(by: disposeBag)
-    }
-    
-    private func turnCardOff() {
-        var a: UInt8 = UInt8(1)
-        let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
-        spinner.startAnimating()
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.cardOff, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-            }.disposed(by: disposeBag)
-    }
-    
-    private func decommission() {
-        var a = CardParameters.kDecommissionFSMParameters
-        let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
-        spinner.startAnimating()
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-            }.disposed(by: disposeBag)
-    }
-    
-    private func observeIA() {
-        // uses notify
-    }
-    
-    private func turnOnLED() {
-        var a: UInt8 = UInt8(1)
-        let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
-        spinner.startAnimating()
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.LED, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-            }.disposed(by: disposeBag)
-    }
-    
-    private func turnOffLED() {
-        var a: UInt8 = UInt8(0)
-        let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
-        spinner.startAnimating()
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.LED, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            DispatchQueue.main.async {
-                self.spinner.stopAnimating()
-            }
-            }.disposed(by: disposeBag)
-    }
 }
 
 extension PeripheralInfoViewController: UITableViewDataSource, UITableViewDelegate {
@@ -333,7 +114,7 @@ extension PeripheralInfoViewController: UITableViewDataSource, UITableViewDelega
         return 1
     }
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return tableView.tag == 2 ? ds2.count : ds.count
+        return tableView.tag == 2 ? ds2.count : vm.numberOfItems()
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell: PeripheralInfoCell
@@ -347,28 +128,30 @@ extension PeripheralInfoViewController: UITableViewDataSource, UITableViewDelega
             cell.config(with: ds2[indexPath.row])
             cell.contentView.backgroundColor = #colorLiteral(red: 0.7476140857, green: 0.8137667775, blue: 0.9230543971, alpha: 1)
         } else {
-            cell.config(with: ds[indexPath.row])
+            if let item = vm.item(at: indexPath) {
+                cell.config(with: item)
+            }
         }
         return cell
     }
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        switch indexPath.row {
-        case 0:
-            writeFastConnectionParameters()
-        case 1:
-            writeFSMParameters()
-        case 2:
-            writeFindMonitorParameters()
-        case 3:
-            decommission()
-        case 4:
-            turnCardOff()
-        case 5:
-            turnOnLED()
-        case 6:
-            turnOffLED()
-        default:
-            break
-        }
+//        switch indexPath.row {
+//        case 0:
+//            writeFastConnectionParameters()
+//        case 1:
+//            writeFSMParameters()
+//        case 2:
+//            writeFindMonitorParameters()
+//        case 3:
+//            decommission()
+//        case 4:
+//            turnCardOff()
+//        case 5:
+//            turnOnLED()
+//        case 6:
+//            turnOffLED()
+//        default:
+//            break
+//        }
     }
 }
