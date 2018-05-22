@@ -10,14 +10,8 @@
 		74781793CACBC7DA5C4668D2 /* Pods_MultipleCardTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FDDFBF6DE7B8054CA9F4650 /* Pods_MultipleCardTest.framework */; };
 		7C1ADBCB20AE60060008C6D0 /* ViewControllerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1ADBCA20AE60060008C6D0 /* ViewControllerViewModel.swift */; };
 		7C1ADBCD20AE8E580008C6D0 /* PeripheralInfoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1ADBCC20AE8E580008C6D0 /* PeripheralInfoViewModel.swift */; };
-		7C27BD7820AA87F40082288C /* MFBPath.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7720AA87F40082288C /* MFBPath.swift */; };
+		7C1ADBD120AEA36C0008C6D0 /* CardFlows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1ADBD020AEA36C0008C6D0 /* CardFlows.swift */; };
 		7C27BD7A20AA92660082288C /* CardMisc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7920AA92660082288C /* CardMisc.swift */; };
-		7C27BD7C20AAB2410082288C /* ScanResultsViewModelType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7B20AAB2410082288C /* ScanResultsViewModelType.swift */; };
-		7C27BD7F20AAB26B0082288C /* ScanResultsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7E20AAB26B0082288C /* ScanResultsViewModel.swift */; };
-		7C27BD8120AAB2880082288C /* PeripheralServicesViewModelType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8020AAB2880082288C /* PeripheralServicesViewModelType.swift */; };
-		7C27BD8320AAB29A0082288C /* PeripheralServicesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8220AAB29A0082288C /* PeripheralServicesViewModel.swift */; };
-		7C27BD8520AAB2BA0082288C /* CharacteristicsViewModelType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8420AAB2BA0082288C /* CharacteristicsViewModelType.swift */; };
-		7C27BD8720AAB2D10082288C /* CharacteristicsViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8620AAB2D10082288C /* CharacteristicsViewModel.swift */; };
 		7C27BD8920ABCE310082288C /* MFServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8820ABCE310082288C /* MFServices.swift */; };
 		7C27BD8B20ABE0AF0082288C /* PeripheralInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */; };
 		7C27BD8D20ABE2260082288C /* PeripheralInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */; };
@@ -44,14 +38,8 @@
 		5D9FE025DD0FC2CADBB64810 /* Pods-MultipleCardTest.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultipleCardTest.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MultipleCardTest/Pods-MultipleCardTest.debug.xcconfig"; sourceTree = "<group>"; };
 		7C1ADBCA20AE60060008C6D0 /* ViewControllerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewControllerViewModel.swift; sourceTree = "<group>"; };
 		7C1ADBCC20AE8E580008C6D0 /* PeripheralInfoViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoViewModel.swift; sourceTree = "<group>"; };
-		7C27BD7720AA87F40082288C /* MFBPath.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFBPath.swift; sourceTree = "<group>"; };
+		7C1ADBD020AEA36C0008C6D0 /* CardFlows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFlows.swift; sourceTree = "<group>"; };
 		7C27BD7920AA92660082288C /* CardMisc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardMisc.swift; sourceTree = "<group>"; };
-		7C27BD7B20AAB2410082288C /* ScanResultsViewModelType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultsViewModelType.swift; sourceTree = "<group>"; };
-		7C27BD7E20AAB26B0082288C /* ScanResultsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanResultsViewModel.swift; sourceTree = "<group>"; };
-		7C27BD8020AAB2880082288C /* PeripheralServicesViewModelType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralServicesViewModelType.swift; sourceTree = "<group>"; };
-		7C27BD8220AAB29A0082288C /* PeripheralServicesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralServicesViewModel.swift; sourceTree = "<group>"; };
-		7C27BD8420AAB2BA0082288C /* CharacteristicsViewModelType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacteristicsViewModelType.swift; sourceTree = "<group>"; };
-		7C27BD8620AAB2D10082288C /* CharacteristicsViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CharacteristicsViewModel.swift; sourceTree = "<group>"; };
 		7C27BD8820ABCE310082288C /* MFServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFServices.swift; sourceTree = "<group>"; };
 		7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoViewController.swift; sourceTree = "<group>"; };
 		7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoCell.swift; sourceTree = "<group>"; };
@@ -114,17 +102,31 @@
 			path = ViewModel;
 			sourceTree = "<group>";
 		};
-		7C27BD7D20AAB24A0082288C /* Rx */ = {
+		7C1ADBCF20AEA3340008C6D0 /* ViewControllers */ = {
 			isa = PBXGroup;
 			children = (
-				7C27BD7B20AAB2410082288C /* ScanResultsViewModelType.swift */,
-				7C27BD7E20AAB26B0082288C /* ScanResultsViewModel.swift */,
-				7C27BD8020AAB2880082288C /* PeripheralServicesViewModelType.swift */,
-				7C27BD8220AAB29A0082288C /* PeripheralServicesViewModel.swift */,
-				7C27BD8420AAB2BA0082288C /* CharacteristicsViewModelType.swift */,
-				7C27BD8620AAB2D10082288C /* CharacteristicsViewModel.swift */,
+				7CA6F82720A8FFEA0049F987 /* ViewController.swift */,
+				7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */,
 			);
-			path = Rx;
+			path = ViewControllers;
+			sourceTree = "<group>";
+		};
+		7C1ADBD220AEA3E70008C6D0 /* views */ = {
+			isa = PBXGroup;
+			children = (
+				7CA6F84C20A929EF0049F987 /* ScanningHelperView.swift */,
+				7CA6F84A20A923950049F987 /* CardCell.swift */,
+				7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */,
+			);
+			path = views;
+			sourceTree = "<group>";
+		};
+		7C1ADBD320AEA3FA0008C6D0 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				7CA6F84620A91F010049F987 /* CardModel.swift */,
+			);
+			path = Model;
 			sourceTree = "<group>";
 		};
 		7CA6F81920A8FFEA0049F987 = {
@@ -149,16 +151,10 @@
 			isa = PBXGroup;
 			children = (
 				7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */,
-				7CA6F82720A8FFEA0049F987 /* ViewController.swift */,
+				7C1ADBD320AEA3FA0008C6D0 /* Model */,
+				7C1ADBCF20AEA3340008C6D0 /* ViewControllers */,
 				7C1ADBCE20AE90A50008C6D0 /* ViewModel */,
-				7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */,
-				7CA6F84C20A929EF0049F987 /* ScanningHelperView.swift */,
-				7CA6F84620A91F010049F987 /* CardModel.swift */,
-				7CA6F84820A920C90049F987 /* StyleGuide.swift */,
-				7CA6F84A20A923950049F987 /* CardCell.swift */,
-				7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */,
-				7C27BD7720AA87F40082288C /* MFBPath.swift */,
-				7C27BD7D20AAB24A0082288C /* Rx */,
+				7C1ADBD220AEA3E70008C6D0 /* views */,
 				7CA6F84320A9025A0049F987 /* Misc */,
 				7CA6F82920A8FFEA0049F987 /* Main.storyboard */,
 				7CA6F82C20A8FFEB0049F987 /* Assets.xcassets */,
@@ -172,6 +168,7 @@
 			isa = PBXGroup;
 			children = (
 				7CA6F83720A9019A0049F987 /* RxBluetoothKitService.swift */,
+				7C1ADBD020AEA36C0008C6D0 /* CardFlows.swift */,
 				7CA6F83920A901C10049F987 /* Result.swift */,
 				7CA6F83B20A901D70049F987 /* Peripheral+Hashable.swift */,
 				7CA6F83D20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift */,
@@ -180,6 +177,7 @@
 				7C27BD8820ABCE310082288C /* MFServices.swift */,
 				7CA6F84420A91AB70049F987 /* Data+utils.swift */,
 				7C27BD7920AA92660082288C /* CardMisc.swift */,
+				7CA6F84820A920C90049F987 /* StyleGuide.swift */,
 			);
 			path = Misc;
 			sourceTree = "<group>";
@@ -311,8 +309,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7C27BD7F20AAB26B0082288C /* ScanResultsViewModel.swift in Sources */,
-				7C27BD7820AA87F40082288C /* MFBPath.swift in Sources */,
 				7C27BD8920ABCE310082288C /* MFServices.swift in Sources */,
 				7C27BD8D20ABE2260082288C /* PeripheralInfoCell.swift in Sources */,
 				7CA6F83E20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift in Sources */,
@@ -320,23 +316,19 @@
 				7C27BD8B20ABE0AF0082288C /* PeripheralInfoViewController.swift in Sources */,
 				7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */,
 				7CA6F84520A91AB70049F987 /* Data+utils.swift in Sources */,
-				7C27BD8320AAB29A0082288C /* PeripheralServicesViewModel.swift in Sources */,
-				7C27BD8520AAB2BA0082288C /* CharacteristicsViewModelType.swift in Sources */,
 				7CA6F84220A902210049F987 /* Constant.swift in Sources */,
 				7CA6F84D20A929EF0049F987 /* ScanningHelperView.swift in Sources */,
 				7CA6F84920A920C90049F987 /* StyleGuide.swift in Sources */,
-				7C27BD8720AAB2D10082288C /* CharacteristicsViewModel.swift in Sources */,
 				7CA6F84020A901FA0049F987 /* Characteristic+Hashable.swift in Sources */,
 				7CA6F83A20A901C10049F987 /* Result.swift in Sources */,
 				7CA6F83820A9019A0049F987 /* RxBluetoothKitService.swift in Sources */,
 				7CA6F83C20A901D70049F987 /* Peripheral+Hashable.swift in Sources */,
 				7CA6F84720A91F010049F987 /* CardModel.swift in Sources */,
 				7CA6F84B20A923950049F987 /* CardCell.swift in Sources */,
-				7C27BD7C20AAB2410082288C /* ScanResultsViewModelType.swift in Sources */,
 				7C1ADBCD20AE8E580008C6D0 /* PeripheralInfoViewModel.swift in Sources */,
 				7C1ADBCB20AE60060008C6D0 /* ViewControllerViewModel.swift in Sources */,
-				7C27BD8120AAB2880082288C /* PeripheralServicesViewModelType.swift in Sources */,
 				7C27BD7A20AA92660082288C /* CardMisc.swift in Sources */,
+				7C1ADBD120AEA36C0008C6D0 /* CardFlows.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

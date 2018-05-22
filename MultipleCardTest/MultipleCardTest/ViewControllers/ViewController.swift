@@ -18,7 +18,9 @@ import RealmSwift
 class ViewController: UIViewController {
     private let disposeBag = DisposeBag()
     
-    private let vm: ViewModel = ViewModel()
+    private let vm: DashboardViewModel = DashboardViewModel()
+    
+    private var isReadingInfo: Bool = false
     
     private lazy var settingBtn: UIButton = {
         let btn = UIButton()
@@ -133,6 +135,9 @@ class ViewController: UIViewController {
             switch result {
             case .success(_):
                 self.reloadTableViewOnMainThread()
+//                if let card = self.vm.getLatestAddedCard() {
+//                    self.vm.establishConnection(to: card)
+//                }
             case .error(_):
                 self.stopLoading()
             }
@@ -167,6 +172,7 @@ class ViewController: UIViewController {
             case .success(let isReading):
                 DispatchQueue.main.async {
                     self.scanningHelperView.isHidden = !isReading
+                    self.isReadingInfo = isReading
                     if isReading {
                         self.scanningHelperView.updateSubtitle(to: "reading card data...")
                     }
@@ -182,6 +188,7 @@ class ViewController: UIViewController {
     private func stopLoading() {
         DispatchQueue.main.async {
             self.spinner.stopAnimating()
+            self.scanningHelperView.isHidden = !self.isReadingInfo
         }
     }
     private func reloadTableViewOnMainThread() {
@@ -247,7 +254,7 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
     }
 
     func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
-        let disconnect = UITableViewRowAction(style: .default, title: "Disconnect") { (action, indexPath) in
+        let disconnect = UITableViewRowAction(style: .default, title: "Unlinking") { (action, indexPath) in
             self.vm.disconnect(at: indexPath)
             tableView.reloadData()
         }
@@ -256,6 +263,7 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        vm.startScanning()
         guard let card = vm.item(at: indexPath) else { return }
         if let item = vm.realmObject(for: card) {
             let vc = PeripheralInfoViewController()

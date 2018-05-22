@@ -15,4 +15,5 @@ enum Result<T, E> {
 
 enum BluetoothServicesError: Error {
     case peripheralNil
+    case commissioningError
 }
