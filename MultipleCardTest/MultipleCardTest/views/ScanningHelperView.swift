@@ -82,8 +82,10 @@ final class ScanningHelperView: UIView {
         }
     }
     func updateSubtitle(to text: String) {
-        spinner.isHidden = false 
-        subtitle.text = text
-        subtitle.isHidden = false
+        DispatchQueue.main.async {
+            self.spinner.isHidden = false
+            self.subtitle.text = text
+            self.subtitle.isHidden = false
+        }
     }
 }

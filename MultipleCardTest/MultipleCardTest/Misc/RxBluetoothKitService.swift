@@ -11,6 +11,7 @@ import RxBluetoothKit
 import RxSwift
 import RxCocoa
 import CoreBluetooth
+import RealmSwift
 
 // RxBluetoothKitService is a class encapsulating logic for most operations you might want to perform
 // on a CentralManager object. Here you can see an example usage of such features as scanning for peripherals,
@@ -50,7 +51,7 @@ final class RxBluetoothKitService: NSObject {
         return updatedValueAndNotificationSubject.asObservable()
     }
     
-    var reConnectionOutput: Observable<Result<Peripheral, Error>> {
+    var reConnectionOutput: Observable<Result<CardModel, Error>> {
         return reConnectionSubject.asObservable()
     }
     
@@ -69,43 +70,42 @@ final class RxBluetoothKitService: NSObject {
     var connectionParamsObserver: Observable<Result<String, Error>> {
         return connectionParamsSubject.asObservable()
     }
-    
+    var setBatteryNotificationObserver: Observable<Result<Bool, Error>> {
+        return setBatteryNotificationSubject.asObservable()
+    }
+    var cardBindingObserver: Observable<Result<CardModel, Error>> {
+        return cardBindingSubject.asObservable()
+    }
+    var turnOffCardObserver: Observable<Result<Bool, Error>> {
+        return turnOffCardSubject.asObservable()
+    }
+    var unlinkingObserver: Observable<Result<Bool, Error>> {
+        return unlinkingSubject.asObservable()
+    }
+    // MARK: - Private fields
     private let scanningSubject = PublishSubject<Result<ScannedPeripheral, Error>>()
-    
     private let discoveredServicesSubject = PublishSubject<Result<[Service], Error>>()
-    
     private let disconnectionSubject = PublishSubject<Result<Disconnection, Error>>()
-    
     private let readValueSubject = PublishSubject<Result<Characteristic, Error>>()
-    
     private let writeValueSubject = PublishSubject<Result<Characteristic, Error>>()
-    
     private let updatedValueAndNotificationSubject = PublishSubject<Result<Characteristic, Error>>()
-    
-    private let reConnectionSubject = PublishSubject<Result<Peripheral, Error>>()
-    
-    // read
+    private let reConnectionSubject = PublishSubject<Result<CardModel, Error>>()
+    private let cardBindingSubject = PublishSubject<Result<CardModel, Error>>()
     private let batterySubject = PublishSubject<Result<String, Error>>()
     private let macAddressSubject = PublishSubject<Result<String, Error>>()
     private let fsmParamsSubject = PublishSubject<Result<String, Error>>()
     private let firmwareVersionSubject = PublishSubject<Result<String, Error>>()
     private let connectionParamsSubject = PublishSubject<Result<String, Error>>()
-    
+    private let setBatteryNotificationSubject = PublishSubject<Result<Bool, Error>>()
+    private let turnOffCardSubject = PublishSubject<Result<Bool, Error>>()
+    private let unlinkingSubject = PublishSubject<Result<Bool, Error>>()
     private let discoveredCharacteristicsSubject = PublishSubject<Result<[Characteristic], Error>>()
-    // MARK: - Private fields
-    
     private let centralManager = CentralManager(queue: .main, options: [CBCentralManagerOptionRestoreIdentifierKey: "some.very.unique.key" as AnyObject])
-    
     private let scheduler: ConcurrentDispatchQueueScheduler
-    
     private let disposeBag = DisposeBag()
-    
-    var peripheralConnections: [Peripheral: Disposable] = [:]
-    
-    private var scanningDisposable: Disposable!
-    
-    private var connectionDisposable: Disposable!
-    
+    private var peripheralConnections: [Peripheral: Disposable] = [:]
+    private var scanningDisposable: Disposable?
+    private var connectionDisposable: Disposable?
     private var notificationDisposables: [Characteristic: Disposable] = [:]
     
     // MARK: - Initialization
@@ -130,7 +130,6 @@ final class RxBluetoothKitService: NSObject {
                 $0 == .poweredOn
             }
             .subscribeOn(MainScheduler.instance)
-            //.timeout(30.0, scheduler: scheduler)
             .flatMap { [weak self] _ -> Observable<ScannedPeripheral> in
                 guard let `self` = self else {
                     return Observable.empty()
@@ -139,7 +138,6 @@ final class RxBluetoothKitService: NSObject {
             }
             .subscribe(onNext: { [weak self] scannedPeripheral in
                 let canConnect = scannedPeripheral.advertisementData.advertisementData["kCBAdvDataLocalName"] as? String == "safedome" && scannedPeripheral.rssi.doubleValue > (self?.kRSSIThreshold)!
-                    self?.disconnect(scannedPeripheral.peripheral)
                 if canConnect {
                     self?.scanningSubject.onNext(Result.success(scannedPeripheral))
                 }
@@ -147,26 +145,23 @@ final class RxBluetoothKitService: NSObject {
                     self?.scanningSubject.onNext(Result.error(error))
             })
     }
-    func tryReconnect(to peripherals: [UUID]) {
+    func tryReconnect(to peripherals: [UUID], realmPeripheral:  Results<RealmCardPripheral>) {
         let peripheralsToReConnect = self.centralManager.retrievePeripherals(withIdentifiers: peripherals)
         if peripheralsToReConnect.count < 1 {
             reConnectionSubject.onNext(Result.error(BluetoothServicesError.peripheralNil))
+        }
+        if let realmObj = realmPeripheral.first {
+            // since it is reconnect notify the view to update before waiting for reading to be finished
+            let card = CardModel.init(name: realmObj.cardName, uuid: realmObj.uuid, isConnected: true, MACAddress: realmObj.MACAddress, firmwareRevisionString: realmObj.firmwareRevisionString, batteryLevel: realmObj.batteryLevel, connectionParameters: realmObj.connectionParameters, fsmParameters: realmObj.fsmParameters, peripheral: nil)
+            self.reConnectionSubject.onNext(Result.success(card))
         }
         for peripheral in peripheralsToReConnect {
             let disposable = peripheral.establishConnection().subscribe({ (event) in
                 if let peripheral = event.element {
                     print(peripheral.isConnected)
                     if peripheral.isConnected {
-                        self.reConnectionSubject.onNext(Result.success(peripheral)) // notify before commissioning since this is reconnect and most definitely is commissioned
-                        self.writeFSMParameters(for: peripheral).subscribe(onNext: { (success) in
-                            if !success {
-                                print("reconnect commission error")
-                                self.reConnectionSubject.onNext(Result.error(BluetoothServicesError.commissioningError))
-                            }
-                        }, onError: { (error) in
-                            print("reconnect commission error \(error)")
-                            self.reConnectionSubject.onNext(Result.error(error))
-                        }).disposed(by: self.disposeBag)
+                        let card = CardModel.init(name: "\(peripheral.name ?? "")", uuid: peripheral.identifier.uuidString, isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: peripheral)
+                        self.reconnectOrTurnOnCard(card)
                     }
                 }
             })
@@ -178,9 +173,6 @@ final class RxBluetoothKitService: NSObject {
         }
         
     }
-    // If you wish to stop scanning for peripherals, you need to dispose the Disposable object, created when
-    // you either subscribe for events from an observable returned by centralManager.scanForPeripherals(:_), or you bind
-    // an observer to it. Check starScanning() above for details.
     func stopScanning() {
         guard let scanningDisposable = scanningDisposable else { return }
         scanningDisposable.dispose()
@@ -240,66 +232,6 @@ final class RxBluetoothKitService: NSObject {
         }).disposed(by: disposeBag)
     }
     
-    // MARK: - Reading from and writing to a characteristic
-    func readValueFrom(_ characteristic: Characteristic) {
-        characteristic.readValue().subscribe(onSuccess: { [unowned self] characteristic in
-            self.readValueSubject.onNext(Result.success(characteristic))
-            }, onError: { [unowned self] error in
-                self.readValueSubject.onNext(Result.error(error))
-        }).disposed(by: disposeBag)
-    }
-    
-    func writeValueTo(characteristic: Characteristic, data: Data) {
-        guard let writeType = characteristic.determineWriteType() else {
-            return
-        }
-        
-        characteristic.writeValue(data, type: writeType).subscribe(onSuccess: { [unowned self] characteristic in
-            self.writeValueSubject.onNext(Result.success(characteristic))
-            }, onError: { [unowned self] error in
-                self.writeValueSubject.onNext(Result.error(error))
-        }).disposed(by: disposeBag)
-    }
-    
-    // MARK: - Characteristic notifications
-    
-    // observeValueUpdateAndSetNotification(:_) returns a disposable from subscription, which triggers notifying start
-    // on a selected characteristic.
-    func observeValueUpdateAndSetNotification(for characteristic: Characteristic) {
-        if let _ = notificationDisposables[characteristic] {
-            self.updatedValueAndNotificationSubject.onNext(Result.error(RxBluetoothServiceError.redundantStateChange))
-        } else {
-            let disposable = characteristic.observeValueUpdateAndSetNotification()
-                .subscribe(onNext: { [weak self] (characteristic) in
-                    self?.updatedValueAndNotificationSubject.onNext(Result.success(characteristic))
-                    }, onError: { [weak self] (error) in
-                        self?.updatedValueAndNotificationSubject.onNext(Result.error(error))
-                })
-            
-            notificationDisposables[characteristic] = disposable
-        }
-    }
-    
-    func disposeNotification(for characteristic: Characteristic) {
-        if let disposable = notificationDisposables[characteristic] {
-            disposable.dispose()
-            notificationDisposables[characteristic] = nil
-        } else {
-            self.updatedValueAndNotificationSubject.onNext(Result.error(RxBluetoothServiceError.redundantStateChange))
-        }
-    }
-    
-    // observeNotifyValue tells us when exactly a characteristic has changed it's state (e.g isNotifying).
-    // We need to use this method, because hardware needs an amount of time to switch characteristic's state.
-    func observeNotifyValue(peripheral: Peripheral, characteristic: Characteristic) {
-        peripheral.observeNotifyValue(for: characteristic)
-            .subscribe(onNext: { [unowned self] (characteristic) in
-                self.updatedValueAndNotificationSubject.onNext(Result.success(characteristic))
-                }, onError: { [unowned self] (error) in
-                    self.updatedValueAndNotificationSubject.onNext(Result.error(error))
-            }).disposed(by: disposeBag)
-    }
-    
     // MARK: - Private methods
     
     // When you observe disconnection from a peripheral, you want to be sure that you take an action on both .next and
@@ -315,8 +247,7 @@ final class RxBluetoothKitService: NSObject {
 }
 // MARK:- Readings
 extension RxBluetoothKitService {
-    
-    func readMACAddress(for card: CardModel) {
+    private func readMACAddress(for card: CardModel) {
         guard let peripheral = card.peripheral else { return }
         let isConnected = peripheral.isConnected
         
@@ -356,7 +287,7 @@ extension RxBluetoothKitService {
             peripheralConnections[peripheral] = disposable
         }
     }
-    func readBattery(for card: CardModel) {
+    private func readBattery(for card: CardModel) {
         guard let peripheral = card.peripheral else { return }
         let isConnected = peripheral.isConnected
         
@@ -386,7 +317,38 @@ extension RxBluetoothKitService {
             peripheralConnections[peripheral] = disposable
         }
     }
-    func readFirmwareVersion(for card: CardModel) {
+    
+    private func setBatteryNotificationOn(for card: CardModel) {
+        guard let peripheral = card.peripheral else { return }
+        let isConnected = peripheral.isConnected
+        
+        let connectedObservableCreator = { return peripheral.observeValueUpdateAndSetNotification(for: DeviceCharacteristic.batteryLevel).asObservable() }
+        let connectObservableCreator = {
+            return peripheral.establishConnection()
+                .do(onNext: { [weak self] _ in
+                    self?.observeDisconnect(for: peripheral)
+                })
+                .flatMap { $0.observeValueUpdateAndSetNotification(for: DeviceCharacteristic.batteryLevel) }
+        }
+        let observable = isConnected ? connectedObservableCreator(): connectObservableCreator()
+        let disposable = observable
+            .subscribe(onNext: { [weak self] char in
+                    print("Bat setNotification Success")
+                    self?.setBatteryNotificationSubject.onNext(Result.success(true))
+                }, onError: { [weak self] error in
+                    print("bat setNotification \(error)")
+                    self?.setBatteryNotificationSubject.onNext(Result.error(error))
+            })
+        
+        if isConnected {
+            disposeBag.insert(disposable)
+        } else {
+            peripheralConnections[peripheral] = disposable
+        }
+        
+    }
+    
+    private func readFirmwareVersion(for card: CardModel) {
         guard let peripheral = card.peripheral else { return }
         let isConnected = peripheral.isConnected
         
@@ -417,7 +379,8 @@ extension RxBluetoothKitService {
             peripheralConnections[peripheral] = disposable
         }
     }
-    func readFSMParameters(for card: CardModel) {
+    
+    private func readFSMParameters(for card: CardModel) {
         guard let peripheral = card.peripheral else { return }
         let isConnected = peripheral.isConnected
         
@@ -448,7 +411,8 @@ extension RxBluetoothKitService {
             peripheralConnections[peripheral] = disposable
         }
     }
-    func readConnectionParameters(for card: CardModel) {
+    
+    private func readConnectionParameters(for card: CardModel) {
         guard let peripheral = card.peripheral else { return }
         let isConnected = peripheral.isConnected
         
@@ -482,43 +446,44 @@ extension RxBluetoothKitService {
 }
 // MARK:- Writings
 extension RxBluetoothKitService {
-    func writeDefaultConnectionParameters(for card: CardModel) -> Observable<Bool> {
+    private func writeDefaultConnectionParameters(for card: CardModel) -> Observable<Result<String, Error>> {
         return Observable.create { (observer) -> Disposable in
             if let peripheral = card.peripheral {
                 var a = CardParameters.kDefaultConnectionParameters
                 let data = NSData.init(bytes: &a, length: Int(kSizeofMFSConnectionParameters))
                 peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
+                        let str = char.characteristic.value?.hexadecimalString
+                        observer.onNext(Result.success(str ?? ""))
+                        print("Default: \(str ?? "")")
                     print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-                    DispatchQueue.main.async {
-                        observer.onNext(true)
-                    }
                 }) { (error) in
                     print("!!!! error writing \(data) with error: \(error)")
-                    DispatchQueue.main.async {
-                        observer.onError(error)
-                    }
+                    observer.onNext(Result.error(error))
                     }.disposed(by: self.disposeBag)
             }
             return Disposables.create()
         }
 
     }
-    func writeFSMParameters(for peripheral: Peripheral) -> Observable<Bool> {
+    private func writeFSMParameters(for card: CardModel) -> Observable<Result<String, Error>> {
         return Observable.create({ (observer) -> Disposable in
-            var a = CardParameters.kDefaultFSMParameters
-            let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
-            peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-                print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-                observer.onNext(true)
-            }) { (error) in
-                print("!!!! error writing \(data) with error: \(error)")
-                observer.onError(error)
-                }.disposed(by: self.disposeBag)
+            if let peripheral = card.peripheral {
+                var a = CardParameters.kDefaultFSMParameters
+                let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
+                peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
+                    let str = char.characteristic.value?.hexadecimalString
+                    observer.onNext(Result.success(str ?? ""))
+                    print("FSM: \(str ?? "")")
+                }) { (error) in
+                    print("!!!! error writing \(data) with error: \(error)")
+                    observer.onNext(Result.error(error))
+                    }.disposed(by: self.disposeBag)
+            }
             return Disposables.create()
         })
 
     }
-    func writeFindMonitorParameters(for card: CardModel) {
+    private func writeFindMonitorParameters(for card: CardModel) {
         guard let peripheral = card.peripheral else { return }
         var a = CardParameters.kMFSFindMonitorParameters
         let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFindMonitorParameters))
@@ -528,42 +493,8 @@ extension RxBluetoothKitService {
             print("!!!! error writing \(data) with error: \(error)")
             }.disposed(by: disposeBag)
     }
-    func turnCardOff(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
-        var a: UInt8 = UInt8(1)
-        let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
-        peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.cardOff, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            print("!!! success write \(String(describing: char.characteristic.value?.hexadecimalString))")
-        }) { (error) in
-            print("!!!! error writing \(data) with error: \(error)")
-            }.disposed(by: disposeBag)
-    }
     func decommission(for card: CardModel) {
-        if let peripheral = card.peripheral {
-            if peripheral.isConnected {
-                var a = CardParameters.kDecommissionFSMParameters
-                let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
-                let disposable = peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-                    print("!!! success write decommission \(String(describing: char.characteristic.value?.hexadecimalString))")
-                    self.disconnect(peripheral)
-                }) { (error) in
-                    print("!!!! error writing decommission \(data) with error: \(error)")
-                    }
-                disposeBag.insert(disposable)
-            }
-            else {
-                centralManager.centralManager.connect(peripheral.peripheral, options: nil)
-                var a = CardParameters.kDecommissionFSMParameters
-                let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
-                let disposable = peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-                    print("!!! success write decommission \(String(describing: char.characteristic.value?.hexadecimalString))")
-                }) { (error) in
-                    print("!!!! error writing decommission \(data) with error: \(error)")
-                }
-                disposeBag.insert(disposable)
-                peripheralConnections[peripheral] = disposable
-            }
-        }
+            unlink(card)
     }
     func turnOnLED(for card: CardModel) {
         guard let peripheral = card.peripheral else { return }
@@ -586,6 +517,161 @@ extension RxBluetoothKitService {
             }.disposed(by: disposeBag)
     }
 }
+
+// MARK:- Card binding Flow
+extension RxBluetoothKitService {
+    func startCardBinding(for card: CardModel) {
+        readBattery(for: card)
+        readFirmwareVersion(for: card)
+        setBatteryNotificationOn(for: card)
+        //Write the Connection parameters
+        let defaultWriteObserver = writeDefaultConnectionParameters(for: card)
+        let fsmObserver = writeFSMParameters(for: card)
+        
+        let zip = Observable.zip(batteryObserver, firmwareVersionObserver, defaultWriteObserver, fsmObserver) {
+                return (batteryLevel: $0, firmware: $1, defaultWrite: $2, fsm: $3)
+            }
+        
+        var cardCopy = card
+        zip.subscribe(onNext: { (batteryLevel, firmware, defaultWrite, fsm) in
+            switch batteryLevel {
+            case .success(let battery):
+                cardCopy.batteryLevel = battery
+            case .error(let error):
+                self.cardBindingSubject.onNext(Result.error(error))
+                break
+            }
+            
+            switch fsm {
+            case .success(let fsm):
+                cardCopy.fsmParameters = fsm
+            case .error(let error):
+                self.cardBindingSubject.onNext(Result.error(error))
+                break
+            }
+            switch defaultWrite {
+            case .success(let connection):
+                cardCopy.connectionParameters = connection
+            case .error(let error):
+                self.cardBindingSubject.onNext(Result.error(error))
+                break
+            }
+            switch firmware {
+            case .success(let firmware):
+                cardCopy.firmwareRevisionString = firmware
+            case .error(let error):
+                self.cardBindingSubject.onNext(Result.error(error))
+                break
+            }
+            self.cardBindingSubject.onNext(Result.success(cardCopy))
+        }, onError: { (error) in
+            self.cardBindingSubject.onNext(Result.error(error))
+        }).disposed(by: disposeBag)
+        
+    }
+    
+    func reconnectOrTurnOnCard(_ card: CardModel) {
+        readBattery(for: card)
+        readFirmwareVersion(for: card)
+        setBatteryNotificationOn(for: card)
+        readFSMParameters(for: card)
+        let defaultWriteObserver = writeDefaultConnectionParameters(for: card)
+        
+        let zip = Observable.zip(batteryObserver, firmwareVersionObserver, setBatteryNotificationObserver, defaultWriteObserver) {
+            return (batteryLevel: $0, firmware: $1, batteryNotification: $2, defaultWrite: $3)
+        }
+        var cardCopy = card
+        zip.subscribe(onNext: { (batteryLevel, firmware, batteryNotification, defaultWrite) in
+            switch batteryLevel {
+            case .success(let battery):
+                cardCopy.batteryLevel = battery
+            case .error(let error):
+                self.reConnectionSubject.onNext(Result.error(error))
+                break
+            }
+            switch defaultWrite {
+            case .success(let connection):
+                cardCopy.connectionParameters = connection
+            case .error(let error):
+                self.reConnectionSubject.onNext(Result.error(error))
+                break
+            }
+            switch firmware {
+            case .success(let firmware):
+                cardCopy.firmwareRevisionString = firmware
+            case .error(let error):
+                self.reConnectionSubject.onNext(Result.error(error))
+                break
+            }
+            self.reConnectionSubject.onNext(Result.success(cardCopy))
+        }, onError: { (error) in
+            self.reConnectionSubject.onNext(Result.error(error))
+        }).disposed(by: disposeBag)
+        
+    }
+    
+    func doOTA(for card: CardModel) {
+        //        App (Master) reads the FW battery
+        //        App (Master) writes the Faster connection parameters as follows
+        //        Min Interval = 16
+        //        Max Interval = 32
+        //        Slave Latency = 2
+        //        Timeout = 1s
+        //        App proceed the OTA (OTA packets exchange)
+        //        App writes the slow parameters to the card
+        //        App re-boots the card (Disconnection takes place)
+        //        App re-connects with the card (Re-connection flow comes into action)
+    }
+    
+    private func unlink(_ card: CardModel) {
+        if let peripheral = card.peripheral {
+            if peripheral.isConnected {
+                var a = CardParameters.kDecommissionFSMParameters
+                let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
+                let disposable = peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
+                    print("!!! success write decommission \(String(describing: char.characteristic.value?.hexadecimalString))")
+                    self.disconnect(peripheral)
+                    self.unlinkingSubject.onNext(Result.success(true))
+                }) { (error) in
+                    print("!!!! error writing decommission \(data) with error: \(error)")
+                    self.unlinkingSubject.onNext(Result.error(error))
+                }
+                disposeBag.insert(disposable)
+            }
+            else {
+                centralManager.centralManager.connect(peripheral.peripheral, options: nil)
+                var a = CardParameters.kDecommissionFSMParameters
+                let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
+                let disposable = peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
+                    print("!!! success write decommission \(String(describing: char.characteristic.value?.hexadecimalString))")
+                    self.disconnect(peripheral)
+                    self.unlinkingSubject.onNext(Result.success(true))
+                }) { (error) in
+                    print("!!!! error writing decommission \(data) with error: \(error)")
+                    self.unlinkingSubject.onNext(Result.error(error))
+                }
+                disposeBag.insert(disposable)
+                peripheralConnections[peripheral] = disposable
+            }
+        }
+    }
+    
+    func trunOff(_ card: CardModel) {
+        if let peripheral = card.peripheral {
+            var a: UInt8 = UInt8(1)
+            let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
+            
+            peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.cardOff, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
+                print("!!! success write turn off \(String(describing: char.characteristic.value?.hexadecimalString))")
+                self.turnOffCardSubject.onNext(Result.success(true))
+            }) { (error) in
+                print("!!!! error writing turn off \(data) with error: \(error)")
+                self.turnOffCardSubject.onNext(Result.error(error))
+                }.disposed(by: disposeBag)
+        }
+    }
+}
+
 
 enum RxBluetoothServiceError: Error {
     

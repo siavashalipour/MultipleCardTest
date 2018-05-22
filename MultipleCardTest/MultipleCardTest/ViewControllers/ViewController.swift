@@ -135,9 +135,6 @@ class ViewController: UIViewController {
             switch result {
             case .success(_):
                 self.reloadTableViewOnMainThread()
-//                if let card = self.vm.getLatestAddedCard() {
-//                    self.vm.establishConnection(to: card)
-//                }
             case .error(_):
                 self.stopLoading()
             }
@@ -183,6 +180,25 @@ class ViewController: UIViewController {
             }
         }, onError: { (_) in
             
+        }).disposed(by: disposeBag)
+        
+        vm.unlinkCardObserver.subscribe(onNext: { (result) in
+            switch result {
+            case .success(let success):
+                if success {
+                    DispatchQueue.main.async {
+                        self.scanningHelperView.isHidden = true
+                    }
+                }
+            case .error(_):
+                DispatchQueue.main.async {
+                    self.scanningHelperView.isHidden = true
+                }
+            }
+        }, onError: { (error) in
+            DispatchQueue.main.async {
+                self.scanningHelperView.isHidden = true
+            }
         }).disposed(by: disposeBag)
     }
     private func stopLoading() {
@@ -256,6 +272,8 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
     func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
         let disconnect = UITableViewRowAction(style: .default, title: "Unlinking") { (action, indexPath) in
             self.vm.disconnect(at: indexPath)
+            self.scanningHelperView.isHidden = false
+            self.scanningHelperView.updateSubtitle(to: "Unlinking...")
             tableView.reloadData()
         }
         return [disconnect]

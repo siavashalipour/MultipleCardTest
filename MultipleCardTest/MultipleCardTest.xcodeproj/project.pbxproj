@@ -169,12 +169,12 @@
 			children = (
 				7CA6F83720A9019A0049F987 /* RxBluetoothKitService.swift */,
 				7C1ADBD020AEA36C0008C6D0 /* CardFlows.swift */,
+				7C27BD8820ABCE310082288C /* MFServices.swift */,
 				7CA6F83920A901C10049F987 /* Result.swift */,
 				7CA6F83B20A901D70049F987 /* Peripheral+Hashable.swift */,
 				7CA6F83D20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift */,
 				7CA6F83F20A901FA0049F987 /* Characteristic+Hashable.swift */,
 				7CA6F84120A902210049F987 /* Constant.swift */,
-				7C27BD8820ABCE310082288C /* MFServices.swift */,
 				7CA6F84420A91AB70049F987 /* Data+utils.swift */,
 				7C27BD7920AA92660082288C /* CardMisc.swift */,
 				7CA6F84820A920C90049F987 /* StyleGuide.swift */,
