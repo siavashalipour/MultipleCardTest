@@ -7,11 +7,8 @@
 //
 
 import Foundation
-import RxBluetoothKit
-import CoreBluetooth
 
-// sizeof(MFSManufacturerData) pads the length so use this instead
-let kSizeofMFSManufacturerData: CUnsignedLong = 3
+
 struct MFSManufacturerData {
     let companyIdentifierCode: Character
     let commissioned: Bool = false
@@ -19,8 +16,7 @@ struct MFSManufacturerData {
     let unused: Int = 6
 }
 
-// sizeof(MFSConnectionParameters) pads the length so use this instead
-let kSizeofMFSConnectionParameters: CUnsignedLong = 8
+
 struct MFSConnectionParameters {
     let minimumConnectionInterval: UInt16
     let maximumConnectionInterval: UInt16
@@ -29,8 +25,7 @@ struct MFSConnectionParameters {
 }
 
 
-// sizeof(MFSFSMParameters) pads the length so use this instead
-let kSizeofMFSFSMParameters: CUnsignedLong = 11
+
 struct MFSFSMParameters {
     let commissioned: UInt8
     let fsmBehaviour: UInt8
@@ -43,14 +38,12 @@ struct MFSFSMParameters {
     let ledBrightness: UInt8
 }
 
-// sizeof(MFSMACAddress) pads the length so use this instead
-let kSizeofMFSMACAddress: CUnsignedLong = 6
+
 struct MFSMACAddress {
     let address: UInt8
 }
 
-// sizeof(MFSFindMonitorParameters) pads the length so use this instead
-let kSizeofMFSFindMonitorParameters: CUnsignedLong = 1
+
 struct MFSFindMonitorParameters {
     let toneValue: UInt8
 }

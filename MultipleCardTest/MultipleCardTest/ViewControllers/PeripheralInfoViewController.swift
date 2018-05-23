@@ -19,32 +19,15 @@ final class PeripheralInfoViewController: UIViewController {
             tableView.reloadData()
         }
     }
-//    var peripheral: Peripheral! {
-//        didSet {
-//            title = "\(peripheral.peripheral.identifier)"
-//            fetchData()
-//        }
-//    }
-//    private let disposeBag = DisposeBag()
-//    var ds: [PeripheralInfoCellData] = [] {
-//        didSet {
-//            tableView.reloadData()
-//            scanningHelperView.shouldShowConnected(false)
-//            scanningHelperView.updateSubtitle(to: "Connecting...")
-//            if ds.count > 3 {
-//                scanningHelperView.isHidden = true
-//            }
-//        }
-//    }
     var ds2: [PeripheralInfoCellData] = [
         PeripheralInfoCellData(title: "writeFastConnectionParameters",
-                               subtitle: "\(NSData.init(bytes: &CardParameters.kFastConnectionParameters, length: Int(kSizeofMFSConnectionParameters)))"),
+                               subtitle: "\(NSData.init(bytes: &CardParameters.kFastConnectionParameters, length: Int(Constant.PackageSizes.kSizeofMFSConnectionParameters)))"),
         PeripheralInfoCellData(title: "writeFSMParameters",
-                               subtitle: "\(NSData.init(bytes: &CardParameters.kDefaultFSMParameters, length: Int(kSizeofMFSFSMParameters)))"),
+                               subtitle: "\(NSData.init(bytes: &CardParameters.kDefaultFSMParameters, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters)))"),
         PeripheralInfoCellData(title: "writeFindMonitorParameters",
-                               subtitle: "\(NSData.init(bytes: &CardParameters.kMFSFindMonitorParameters, length: Int(kSizeofMFSFindMonitorParameters)))"),
+                               subtitle: "\(NSData.init(bytes: &CardParameters.kMFSFindMonitorParameters, length: Int(Constant.PackageSizes.kSizeofMFSFindMonitorParameters)))"),
         PeripheralInfoCellData(title: "decommission",
-                               subtitle: "\(NSData.init(bytes: &CardParameters.kDecommissionFSMParameters, length: Int(kSizeofMFSFSMParameters)))"),
+                               subtitle: "\(NSData.init(bytes: &CardParameters.kDecommissionFSMParameters, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters)))"),
         PeripheralInfoCellData(title: "turnCardOff", subtitle: "1"),
         PeripheralInfoCellData(title: "turnOnLED", subtitle: "1"),
         PeripheralInfoCellData(title: "turnOffLED", subtitle: "0")

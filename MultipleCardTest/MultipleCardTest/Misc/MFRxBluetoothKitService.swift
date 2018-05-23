@@ -450,7 +450,7 @@ extension MFRxBluetoothKitService {
         return Observable.create { (observer) -> Disposable in
             if let peripheral = card.peripheral {
                 var a = CardParameters.kDefaultConnectionParameters
-                let data = NSData.init(bytes: &a, length: Int(kSizeofMFSConnectionParameters))
+                let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSConnectionParameters))
                 peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
                         let str = char.characteristic.value?.hexadecimalString
                         observer.onNext(Result.success(str ?? ""))
@@ -468,7 +468,7 @@ extension MFRxBluetoothKitService {
         return Observable.create({ (observer) -> Disposable in
             if let peripheral = card.peripheral {
                 var a = CardParameters.kDefaultFSMParameters
-                let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
+                let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters))
                 peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
                     let str = char.characteristic.value?.hexadecimalString
                     observer.onNext(Result.success(str ?? ""))
@@ -485,7 +485,7 @@ extension MFRxBluetoothKitService {
     private func writeFindMonitorParameters(for card: CardModel) {
         guard let peripheral = card.peripheral else { return }
         var a = CardParameters.kMFSFindMonitorParameters
-        let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFindMonitorParameters))
+        let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFindMonitorParameters))
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.findMonitorParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
             MFBLogger.shared.debug("write Find Monitor success: \(String(describing: char.characteristic.value?.hexadecimalString))")
         }) { (error) in
@@ -641,7 +641,7 @@ extension MFRxBluetoothKitService {
     
     private func doDecommission(for peripheral: Peripheral) {
         var a = CardParameters.kDecommissionFSMParameters
-        let data = NSData.init(bytes: &a, length: Int(kSizeofMFSFSMParameters))
+        let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters))
         let disposable = peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
             MFBLogger.shared.debug("decommission success: \(String(describing: char.characteristic.value?.hexadecimalString))")
             self.disconnect(peripheral)
