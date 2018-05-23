@@ -11,4 +11,5 @@ target 'MultipleCardTest' do
     pod 'RxBluetoothKit', '~> 5.0'
     pod 'SnapKit'
     pod 'RealmSwift'
+    pod 'SwiftyBeaver'
 end

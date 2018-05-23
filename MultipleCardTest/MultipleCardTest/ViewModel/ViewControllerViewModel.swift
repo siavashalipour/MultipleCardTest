@@ -61,7 +61,6 @@ class DashboardViewModel {
                 let card = CardModel(name: "\(scanned.peripheral.name ?? "")", uuid: "\(scanned.peripheral.identifier)", isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: scanned.peripheral)
                 _ = scanned.peripheral.establishConnection().subscribe({ (event) in
                     if let peripheral = event.element {
-                        print(peripheral.isConnected)
                         if peripheral.isConnected {
                             self.bleKit.startCardBinding(for: card)
                         }
@@ -69,39 +68,31 @@ class DashboardViewModel {
                 })
 
             case .error(let error):
-                print("scanning error: \(error)")
                 self.dataUpdatedPublisher.onNext(Result.error(error))
             }
         }, onError: { (error) in
-            print("!scannin error: \(error)")
             self.dataUpdatedPublisher.onNext(Result.error(error))
         }).disposed(by: disposeBag)
         
         bleKit.cardBindingObserver.subscribe(onNext: { (result) in
             switch result {
             case .success(let card):
-                print("Card flow binding success \(card)")
                 self.add(card: card)
             case .error(let error):
-                print("Card flow binding failed \(error)")
                 self.dataUpdatedPublisher.onNext(Result.error(error))
             }
         }, onError: { (error) in
-            print("Card flow binding failed \(error)")
             self.dataUpdatedPublisher.onNext(Result.error(error))
         }).disposed(by: disposeBag)
         
         bleKit.disconnectionReasonOutput.subscribe(onNext: { (result) in
             switch result {
             case .success(let peripheral):
-                print("disconnected from \(peripheral.0.identifier)")
                 self.disconnectPublisher.onNext(Result.success(peripheral.0))
             case .error(let error):
-                print("Disconnection error: \(error)")
                 self.disconnectPublisher.onNext(Result.error(error))
             }
         }, onError: { (error) in
-            print("!Disconnection error: \(error)")
             self.disconnectPublisher.onNext(Result.error(error))
         }).disposed(by: disposeBag)
         
@@ -111,11 +102,9 @@ class DashboardViewModel {
                 self.add(card: card)
                 self.reconnectionPublisher.onNext(Result.success(card))
             case .error(let error):
-                print("REconnect error: \(error)")
                 self.reconnectionPublisher.onNext(Result.error(error))
             }
         }, onError: { (error) in
-            print("REconnect error: \(error)")
             self.reconnectionPublisher.onNext(Result.error(error))
         }).disposed(by: disposeBag)
         
@@ -154,21 +143,19 @@ class DashboardViewModel {
 
         try! realm.write {
             model.cardName = card.name
-            if model.uuid == "" && model.MACAddress == "" {
+            if model.uuid == "" { // since this is the primary key we need to make sure that it is the first and only time that we set it
                 model.uuid = card.uuid
-                model.MACAddress = card.MACAddress
-                model.batteryLevel = card.batteryLevel
-                model.firmwareRevisionString = card.firmwareRevisionString
-                model.connectionParameters = card.connectionParameters
-                model.fsmParameters = card.fsmParameters
             }
-            print("Card \(card.uuid) ; Model \(model)")
+            model.MACAddress = card.MACAddress
+            model.batteryLevel = card.batteryLevel
+            model.firmwareRevisionString = card.firmwareRevisionString
+            model.connectionParameters = card.connectionParameters
+            model.fsmParameters = card.fsmParameters
             realm.add(model, update: true)
         }
     }
     private func deleteFromRealm(card: CardModel) {
         if let objectToDelete = realm.object(ofType: RealmCardPripheral.self, forPrimaryKey: card.uuid) {
-            print("Realm Deleted \(objectToDelete.uuid)")
             try! realm.write {
                 realm.delete(objectToDelete)
             }
@@ -203,7 +190,7 @@ class DashboardViewModel {
         }
         var uuids: [UUID] = []
         for uuid in uuidStrings {
-            print("Fetched \(uuid)")
+            MFBLogger.shared.debug("Fetched \(uuid)")
             if let aUUID = UUID.init(uuidString: uuid) {
                 uuids.append(aUUID)
             }
