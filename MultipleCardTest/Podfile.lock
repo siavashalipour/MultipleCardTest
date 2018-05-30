@@ -1,27 +1,30 @@
 PODS:
-  - Realm (3.5.0):
-    - Realm/Headers (= 3.5.0)
-  - Realm/Headers (3.5.0)
-  - RealmSwift (3.5.0):
-    - Realm (= 3.5.0)
-  - RxBluetoothKit (5.0.2):
+  - Alamofire (4.7.2)
+  - Realm (3.6.0):
+    - Realm/Headers (= 3.6.0)
+  - Realm/Headers (3.6.0)
+  - RealmSwift (3.6.0):
+    - Realm (= 3.6.0)
+  - RxBluetoothKit (5.1.0):
     - RxSwift (~> 4.0)
   - RxCocoa (4.1.2):
     - RxSwift (~> 4.0)
   - RxSwift (4.1.2)
   - SnapKit (4.0.0)
-  - SwiftyBeaver (1.5.2)
+  - SwiftyBeaver (1.6.0)
 
 DEPENDENCIES:
-  - RealmSwift
-  - RxBluetoothKit (~> 5.0)
-  - RxCocoa (~> 4.0)
-  - RxSwift (~> 4.0)
-  - SnapKit
-  - SwiftyBeaver
+  - Alamofire (= 4.7.2)
+  - RealmSwift (= 3.6.0)
+  - RxBluetoothKit
+  - RxCocoa
+  - RxSwift
+  - SnapKit (= 4.0.0)
+  - SwiftyBeaver (= 1.6.0)
 
 SPEC REPOS:
   https://github.com/cocoapods/specs.git:
+    - Alamofire
     - Realm
     - RealmSwift
     - RxBluetoothKit
@@ -31,14 +34,15 @@ SPEC REPOS:
     - SwiftyBeaver
 
 SPEC CHECKSUMS:
-  Realm: 0378021c424e4e2bd6a0e63b27881e929d9b9ad1
-  RealmSwift: 3322562622fda2ad596985ead4d8d8be30cf838c
-  RxBluetoothKit: 3c5f29177dcc9e53960493b055e3ef2954d523a0
+  Alamofire: e4fa87002c137ba2d8d634d2c51fabcda0d5c223
+  Realm: 08b464b462d4f31bbd4ba5f5a1c8722ef0a700b7
+  RealmSwift: 973e1499c44ab571f894c2c908e2db450be280c3
+  RxBluetoothKit: a86ac599e8019f1392e86b3c0f147fd2b936df94
   RxCocoa: d88ba0f1f6abf040011a9eb4b539324fc426843a
   RxSwift: e49536837d9901277638493ea537394d4b55f570
   SnapKit: a42d492c16e80209130a3379f73596c3454b7694
-  SwiftyBeaver: 85daaaa2b3ae6e31b7b55c99430e8b91dac088af
+  SwiftyBeaver: e45759613e50b522b0e6f53b1f0f14389b45ca34
 
-PODFILE CHECKSUM: 0fcb3eef002e65dd90c63654df6840618b3f731c
+PODFILE CHECKSUM: db3e3bb8bd7c77ade665ab325de40721c4a05064
 
 COCOAPODS: 1.5.2

@@ -14,6 +14,29 @@ struct Constant {
         static let defaultDispatchQueueLabel = "com.maxwellforest.rxbluetoothkit.timer"
     }
     
+    struct FirmwareUpdate {
+        // When the batter level is below 10%. The user won't be able to update the firmware
+        static let kMinimumBatteryLevelForFirmwareUpdate = 10
+        static let kMFSFirmwareUpdateErrorDomain = "MFSFirmwareUpdateErrorDomain"
+        static let kFirmwareLastUpdateCheckedDateKey = "mfs_wallet_firmware_last_update_checked_date"
+        static let kFirmwareUpdateAvailableKey = "mfs_wallet_is_firmware_update_available"
+        static let kFirmwareVersionKey = "mfs_wallet_firmware_version_key"
+        static let kFirmwareUpdateFailedCountKey = "mfs_wallet_firmware_failed_count_key"
+        static let kFirmwareUpdateIsCardFaultyKey = "mfs_wallet_firmware_is_card_faulty_key"
+        static let kCachedFirmwareFilename = "dialog_firmware_iso.img"
+        static let otaURL = "https://updates.safedome.com/check/safedome"
+        static let otaShuffledText = """
+~BDhLy8^G!G"iLk:PA8Cpo{&T93|<8J0?MA@vLD32|tSySVoQsHIOatmm)qSQJp?tjb}VFK3Fp&Daa"D|KErw3MwP"vn$EQ24saE9kC57iVP2EyOb3D:ram37ZJ^Y80%UV&YAQIApvPr4Q~Z*Jcjn9f:kypvOA1m$*eQ&?NB&l}5"4!wcDvnc{>MyjmzZ>YwMKBZ#CUOpw>OGEPNoJ+RXM89vnwIhUP>v{p$%M$iPR:A?bG3Ophev8kpn7IjG)UMWk<O9S9EeX5btDu_Afyn35z:g0H%|aFyj"6Hy*2rV+$*}2&*HZe4h)nB_ag7IUIp2tF#$bo|P&T|5pC@ioM(SjZpSdp_^P:mu?%&T(|8M62it4mu@Ffeu*6gA$<*MdsjxeO!$YxTG^9Ut9dF7C60D.v4<~nvPiJ%N4_|BIj*+A0unQnO7!6&B*BM6Q<A!8csSlA1hLQne8OWZ"ri0&<Awem!Idrb3kuH_c{wA5u(?OjA>:K%kNdKK53NOB3R7L?awjBzCHl~AWNP0t@qIZA!?eC>hCLT|b"1nQkAZw~phA03):C5#yX>gF5)@!pVPIb%(S6aDl{Dc6z"Sq3YP8w{cY&I4U~{kO5g1"m@rKlPHc5t1XM1fThPKYH2?Q0jFMvSmtZ>9f+OT5pc:VZ6bfSnGsR@UOr&CGVME72GW)J_7wyZEf}%H&<PR!hsL!+YewYKaUpY*W9ouWaA<<YslOsA!DUU(:D730+iEBc":"Lr2O!B2ld^saf$!uH$8w!X&jf:Y+~_K2Qg"83cIRWoEZoZB+YPAX?>Pyuti~h+^"Be51-g@_)q(<{k5xm64UNzO_T6ZCLtqF:qNp&INz9G6v!idcYzpmX30+YUwZs??hqEfHokAkx><V0uIFkw3nCjzA%uz7kR{(WT:S(7DX7"pbF5XEltREq!e*>yMDHRod%kBY1QDlOPVy:UE$*V>@s&d^Q>*5pOlt_V!
+"""
+        
+        // Interval when the firmware update will fail due to a time out
+        static let kFirmwareUpdateTimeOutInterval = 90
+        
+        static let kChunkSize = 20
+    }
+    struct NotificationKeys {
+        static let newFirmwareDataSaved: String = "newFirmwareDataSaved"
+    }
     struct PackageSizes {
         // sizeof(MFSManufacturerData) pads the length so use this instead
         static let kSizeofMFSManufacturerData: CUnsignedLong = 3
@@ -28,38 +51,3 @@ struct Constant {
     }
 }
 
-
-struct CardParameters {
-    
-    static var kDefaultConnectionParameters = MFSConnectionParameters(minimumConnectionInterval: 1583, //1978.75ms
-                                                                      maximumConnectionInterval: 1599, //1998.75ms
-                                                                      slaveLatency: 0,
-                                                                      connectionSupervisionTimeout: 600)  //6s
-    
-    static var kFastConnectionParameters = MFSConnectionParameters(minimumConnectionInterval: 10,
-                                                                   maximumConnectionInterval: 30,
-                                                                   slaveLatency: 1,
-                                                                   connectionSupervisionTimeout: 200)
-
-    static var kDefaultFSMParameters = MFSFSMParameters(commissioned: 1, //Yes
-                                                        fsmBehaviour: 0, //FSM_BEHAVIOUR_LOOP_INACTIVE_FIRST
-                                                        fsmConnectedTime: 0, //Don't disconnect
-                                                        fsmAdvertiseTimeShort: 80, //16s
-                                                        fsmAdvertiseTimeLong: 80, //16s
-                                                        fsmInactiveTime: 1, //200ms
-                                                        fsmAdvertisingIntervalShort: 2056, //1285ms
-                                                        fsmAdvertisingIntervalLong: 2056, //1285ms
-                                                        ledBrightness: 100) //Full brightness
-
-    static var kDecommissionFSMParameters = MFSFSMParameters(commissioned: 0,
-                                                             fsmBehaviour: 0,
-                                                             fsmConnectedTime: 0,
-                                                             fsmAdvertiseTimeShort: 80,
-                                                             fsmAdvertiseTimeLong: 80,
-                                                             fsmInactiveTime: 1,
-                                                             fsmAdvertisingIntervalShort: 2056,
-                                                             fsmAdvertisingIntervalLong: 2056,
-                                                             ledBrightness: 100)
-    
-    static var kMFSFindMonitorParameters = MFSFindMonitorParameters(toneValue: 2)
-}

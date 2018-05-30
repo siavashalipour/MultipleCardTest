@@ -10,12 +10,9 @@
 		74781793CACBC7DA5C4668D2 /* Pods_MultipleCardTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8FDDFBF6DE7B8054CA9F4650 /* Pods_MultipleCardTest.framework */; };
 		7C1ADBCB20AE60060008C6D0 /* ViewControllerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1ADBCA20AE60060008C6D0 /* ViewControllerViewModel.swift */; };
 		7C1ADBCD20AE8E580008C6D0 /* PeripheralInfoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1ADBCC20AE8E580008C6D0 /* PeripheralInfoViewModel.swift */; };
-		7C1ADBD120AEA36C0008C6D0 /* CardFlows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C1ADBD020AEA36C0008C6D0 /* CardFlows.swift */; };
-		7C27BD7A20AA92660082288C /* CardMisc.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD7920AA92660082288C /* CardMisc.swift */; };
-		7C27BD8920ABCE310082288C /* MFServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8820ABCE310082288C /* MFServices.swift */; };
+		7C27BD8920ABCE310082288C /* MFCardServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8820ABCE310082288C /* MFCardServices.swift */; };
 		7C27BD8B20ABE0AF0082288C /* PeripheralInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */; };
 		7C27BD8D20ABE2260082288C /* PeripheralInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */; };
-		7C31DF3320B3EEC700E0F059 /* MFLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C31DF3220B3EEC700E0F059 /* MFLogger.swift */; };
 		7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */; };
 		7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82720A8FFEA0049F987 /* ViewController.swift */; };
 		7CA6F82B20A8FFEA0049F987 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7CA6F82920A8FFEA0049F987 /* Main.storyboard */; };
@@ -32,6 +29,11 @@
 		7CA6F84920A920C90049F987 /* StyleGuide.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F84820A920C90049F987 /* StyleGuide.swift */; };
 		7CA6F84B20A923950049F987 /* CardCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F84A20A923950049F987 /* CardCell.swift */; };
 		7CA6F84D20A929EF0049F987 /* ScanningHelperView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F84C20A929EF0049F987 /* ScanningHelperView.swift */; };
+		7CB8D7F320BE4FAA00F0E3B8 /* MFCardParameters.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB8D7F220BE4FAA00F0E3B8 /* MFCardParameters.swift */; };
+		7CB8D7F620BE6BD600F0E3B8 /* String+Subscript.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB8D7F520BE6BD600F0E3B8 /* String+Subscript.swift */; };
+		7CB8D7F820BE6C3D00F0E3B8 /* OTA+SUOTA.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB8D7F720BE6C3D00F0E3B8 /* OTA+SUOTA.swift */; };
+		7CB8D7FC20BE6C5F00F0E3B8 /* MFFirmwareHelper.m in Sources */ = {isa = PBXBuildFile; fileRef = 7CB8D7FB20BE6C5F00F0E3B8 /* MFFirmwareHelper.m */; };
+		7CB8D7FF20BE6CF200F0E3B8 /* MFFirmwareUpdateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CB8D7FE20BE6CF200F0E3B8 /* MFFirmwareUpdateManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -39,12 +41,9 @@
 		5D9FE025DD0FC2CADBB64810 /* Pods-MultipleCardTest.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-MultipleCardTest.debug.xcconfig"; path = "Pods/Target Support Files/Pods-MultipleCardTest/Pods-MultipleCardTest.debug.xcconfig"; sourceTree = "<group>"; };
 		7C1ADBCA20AE60060008C6D0 /* ViewControllerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewControllerViewModel.swift; sourceTree = "<group>"; };
 		7C1ADBCC20AE8E580008C6D0 /* PeripheralInfoViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoViewModel.swift; sourceTree = "<group>"; };
-		7C1ADBD020AEA36C0008C6D0 /* CardFlows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardFlows.swift; sourceTree = "<group>"; };
-		7C27BD7920AA92660082288C /* CardMisc.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardMisc.swift; sourceTree = "<group>"; };
-		7C27BD8820ABCE310082288C /* MFServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFServices.swift; sourceTree = "<group>"; };
+		7C27BD8820ABCE310082288C /* MFCardServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFCardServices.swift; sourceTree = "<group>"; };
 		7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoViewController.swift; sourceTree = "<group>"; };
 		7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoCell.swift; sourceTree = "<group>"; };
-		7C31DF3220B3EEC700E0F059 /* MFLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFLogger.swift; sourceTree = "<group>"; };
 		7CA6F82220A8FFEA0049F987 /* MultipleCardTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultipleCardTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7CA6F82720A8FFEA0049F987 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -63,6 +62,13 @@
 		7CA6F84820A920C90049F987 /* StyleGuide.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StyleGuide.swift; sourceTree = "<group>"; };
 		7CA6F84A20A923950049F987 /* CardCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CardCell.swift; sourceTree = "<group>"; };
 		7CA6F84C20A929EF0049F987 /* ScanningHelperView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScanningHelperView.swift; sourceTree = "<group>"; };
+		7CB8D7F220BE4FAA00F0E3B8 /* MFCardParameters.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFCardParameters.swift; sourceTree = "<group>"; };
+		7CB8D7F520BE6BD600F0E3B8 /* String+Subscript.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+Subscript.swift"; sourceTree = "<group>"; };
+		7CB8D7F720BE6C3D00F0E3B8 /* OTA+SUOTA.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "OTA+SUOTA.swift"; sourceTree = "<group>"; };
+		7CB8D7F920BE6C5F00F0E3B8 /* MultipleCardTest-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "MultipleCardTest-Bridging-Header.h"; sourceTree = "<group>"; };
+		7CB8D7FA20BE6C5F00F0E3B8 /* MFFirmwareHelper.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MFFirmwareHelper.h; sourceTree = "<group>"; };
+		7CB8D7FB20BE6C5F00F0E3B8 /* MFFirmwareHelper.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MFFirmwareHelper.m; sourceTree = "<group>"; };
+		7CB8D7FE20BE6CF200F0E3B8 /* MFFirmwareUpdateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFFirmwareUpdateManager.swift; sourceTree = "<group>"; };
 		8FDDFBF6DE7B8054CA9F4650 /* Pods_MultipleCardTest.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_MultipleCardTest.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -170,19 +176,39 @@
 			isa = PBXGroup;
 			children = (
 				7CA6F83720A9019A0049F987 /* MFRxBluetoothKitService.swift */,
-				7C1ADBD020AEA36C0008C6D0 /* CardFlows.swift */,
-				7C27BD8820ABCE310082288C /* MFServices.swift */,
+				7CB8D7FE20BE6CF200F0E3B8 /* MFFirmwareUpdateManager.swift */,
+				7C27BD8820ABCE310082288C /* MFCardServices.swift */,
+				7CB8D7F220BE4FAA00F0E3B8 /* MFCardParameters.swift */,
+				7CB8D7FD20BE6C6A00F0E3B8 /* ObjC */,
+				7CB8D7F420BE4FF900F0E3B8 /* Extensions */,
 				7CA6F83920A901C10049F987 /* Result.swift */,
-				7C31DF3220B3EEC700E0F059 /* MFLogger.swift */,
-				7CA6F83B20A901D70049F987 /* Peripheral+Hashable.swift */,
-				7CA6F83D20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift */,
-				7CA6F83F20A901FA0049F987 /* Characteristic+Hashable.swift */,
 				7CA6F84120A902210049F987 /* Constant.swift */,
-				7CA6F84420A91AB70049F987 /* Data+utils.swift */,
-				7C27BD7920AA92660082288C /* CardMisc.swift */,
 				7CA6F84820A920C90049F987 /* StyleGuide.swift */,
+				7CB8D7F920BE6C5F00F0E3B8 /* MultipleCardTest-Bridging-Header.h */,
 			);
 			path = Misc;
+			sourceTree = "<group>";
+		};
+		7CB8D7F420BE4FF900F0E3B8 /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				7CA6F83B20A901D70049F987 /* Peripheral+Hashable.swift */,
+				7CA6F83D20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift */,
+				7CA6F84420A91AB70049F987 /* Data+utils.swift */,
+				7CA6F83F20A901FA0049F987 /* Characteristic+Hashable.swift */,
+				7CB8D7F520BE6BD600F0E3B8 /* String+Subscript.swift */,
+				7CB8D7F720BE6C3D00F0E3B8 /* OTA+SUOTA.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		7CB8D7FD20BE6C6A00F0E3B8 /* ObjC */ = {
+			isa = PBXGroup;
+			children = (
+				7CB8D7FA20BE6C5F00F0E3B8 /* MFFirmwareHelper.h */,
+				7CB8D7FB20BE6C5F00F0E3B8 /* MFFirmwareHelper.m */,
+			);
+			path = ObjC;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -219,6 +245,7 @@
 				TargetAttributes = {
 					7CA6F82120A8FFEA0049F987 = {
 						CreatedOnToolsVersion = 9.3;
+						LastSwiftMigration = 0930;
 						SystemCapabilities = {
 							com.apple.BackgroundModes = {
 								enabled = 1;
@@ -266,6 +293,7 @@
 			);
 			inputPaths = (
 				"${SRCROOT}/Pods/Target Support Files/Pods-MultipleCardTest/Pods-MultipleCardTest-frameworks.sh",
+				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
 				"${BUILT_PRODUCTS_DIR}/Realm/Realm.framework",
 				"${BUILT_PRODUCTS_DIR}/RealmSwift/RealmSwift.framework",
 				"${BUILT_PRODUCTS_DIR}/RxBluetoothKit/RxBluetoothKit.framework",
@@ -276,6 +304,7 @@
 			);
 			name = "[CP] Embed Pods Frameworks";
 			outputPaths = (
+				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Realm.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RealmSwift.framework",
 				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/RxBluetoothKit.framework",
@@ -314,14 +343,13 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7C27BD8920ABCE310082288C /* MFServices.swift in Sources */,
+				7C27BD8920ABCE310082288C /* MFCardServices.swift in Sources */,
 				7C27BD8D20ABE2260082288C /* PeripheralInfoCell.swift in Sources */,
 				7CA6F83E20A901EB0049F987 /* Characterist+CBCharacteristicWriteType.swift in Sources */,
 				7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */,
 				7C27BD8B20ABE0AF0082288C /* PeripheralInfoViewController.swift in Sources */,
 				7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */,
 				7CA6F84520A91AB70049F987 /* Data+utils.swift in Sources */,
-				7C31DF3320B3EEC700E0F059 /* MFLogger.swift in Sources */,
 				7CA6F84220A902210049F987 /* Constant.swift in Sources */,
 				7CA6F84D20A929EF0049F987 /* ScanningHelperView.swift in Sources */,
 				7CA6F84920A920C90049F987 /* StyleGuide.swift in Sources */,
@@ -329,12 +357,15 @@
 				7CA6F83A20A901C10049F987 /* Result.swift in Sources */,
 				7CA6F83820A9019A0049F987 /* MFRxBluetoothKitService.swift in Sources */,
 				7CA6F83C20A901D70049F987 /* Peripheral+Hashable.swift in Sources */,
+				7CB8D7FF20BE6CF200F0E3B8 /* MFFirmwareUpdateManager.swift in Sources */,
+				7CB8D7F320BE4FAA00F0E3B8 /* MFCardParameters.swift in Sources */,
 				7CA6F84720A91F010049F987 /* CardModel.swift in Sources */,
 				7CA6F84B20A923950049F987 /* CardCell.swift in Sources */,
 				7C1ADBCD20AE8E580008C6D0 /* PeripheralInfoViewModel.swift in Sources */,
+				7CB8D7F620BE6BD600F0E3B8 /* String+Subscript.swift in Sources */,
+				7CB8D7FC20BE6C5F00F0E3B8 /* MFFirmwareHelper.m in Sources */,
 				7C1ADBCB20AE60060008C6D0 /* ViewControllerViewModel.swift in Sources */,
-				7C27BD7A20AA92660082288C /* CardMisc.swift in Sources */,
-				7C1ADBD120AEA36C0008C6D0 /* CardFlows.swift in Sources */,
+				7CB8D7F820BE6C3D00F0E3B8 /* OTA+SUOTA.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -479,6 +510,7 @@
 			baseConfigurationReference = 5D9FE025DD0FC2CADBB64810 /* Pods-MultipleCardTest.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 33GWFDB497;
 				INFOPLIST_FILE = MultipleCardTest/Info.plist;
@@ -488,6 +520,8 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = Maxwellforest.MultipleCardTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "MultipleCardTest/Misc/MultipleCardTest-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -498,6 +532,7 @@
 			baseConfigurationReference = 4483EC65E904268662F79F2F /* Pods-MultipleCardTest.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 33GWFDB497;
 				INFOPLIST_FILE = MultipleCardTest/Info.plist;
@@ -507,6 +542,7 @@
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = Maxwellforest.MultipleCardTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "MultipleCardTest/Misc/MultipleCardTest-Bridging-Header.h";
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};

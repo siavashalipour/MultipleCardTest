@@ -18,9 +18,9 @@ final class MFRxBluetoothKitService {
     typealias Disconnection = (Peripheral, DisconnectionReason?)
     // MARK: - Public outputs
     
-    var scanningOutput: Observable<Result<ScannedPeripheral, Error>> {
-        return scanningSubject.share(replay: 1, scope: .forever).asObservable()
-    }
+//    var scanningOutput: Observable<Result<ScannedPeripheral, Error>> {
+//        return scanningSubject.share(replay: 1, scope: .forever).asObservable()
+//    }
     
     var discoveredServicesOutput: Observable<Result<[Service], Error>> {
         return discoveredServicesSubject.asObservable()
@@ -77,6 +77,12 @@ final class MFRxBluetoothKitService {
     var unlinkingObserver: Observable<Result<Bool, Error>> {
         return unlinkingSubject.asObservable()
     }
+    var startCardBindingObserver: Observable<Result<Bool, Error>> {
+        return startCardBindingSubject.asObservable()
+    }
+    var reConnectingInProgressObserver: Observable<Result<Bool, Error>> {
+        return reConnectingInProgressSubject.asObservable()
+    }
     // MARK: - Private fields
     private let scanningSubject = PublishSubject<Result<ScannedPeripheral, Error>>()
     private let discoveredServicesSubject = PublishSubject<Result<[Service], Error>>()
@@ -95,6 +101,9 @@ final class MFRxBluetoothKitService {
     private let turnOffCardSubject = PublishSubject<Result<Bool, Error>>()
     private let unlinkingSubject = PublishSubject<Result<Bool, Error>>()
     private let discoveredCharacteristicsSubject = PublishSubject<Result<[Characteristic], Error>>()
+    private var startCardBindingSubject = PublishSubject<Result<Bool, Error>>()
+    private var reConnectingInProgressSubject = PublishSubject<Result<Bool, Error>>()
+    
     private let centralManager = CentralManager(queue: .main, options: [CBCentralManagerOptionRestoreIdentifierKey: "some.very.unique.key" as AnyObject])
     private let scheduler: ConcurrentDispatchQueueScheduler
     private let disposeBag = DisposeBag()
@@ -102,13 +111,20 @@ final class MFRxBluetoothKitService {
     private var scanningDisposable: Disposable?
     private var connectionDisposable: Disposable?
     private var notificationDisposables: [Characteristic: Disposable] = [:]
-    
+    private var foundSafedome: Bool = false {
+        didSet {
+            if foundSafedome {
+                scanningDisposable?.dispose()
+            }
+        }
+    }
     // MARK:- Constants
     private let kRSSIThreshold: Double = -60
     private let kReadingTimeout: Double = 40
     
+    static let shared: MFRxBluetoothKitService = MFRxBluetoothKitService.init()
     // MARK: - Initialization
-    init() {
+    private init() {
         let timerQueue = DispatchQueue(label: Constant.Strings.defaultDispatchQueueLabel)
         scheduler = ConcurrentDispatchQueueScheduler(queue: timerQueue)
     }
@@ -138,12 +154,19 @@ final class MFRxBluetoothKitService {
             }
             .subscribe(onNext: { [weak self] scannedPeripheral in
                 let canConnect = scannedPeripheral.advertisementData.advertisementData["kCBAdvDataLocalName"] as? String == "safedome" && scannedPeripheral.rssi.doubleValue > (self?.kRSSIThreshold)!
+                AppDelegate.shared.log.debug("Scanned and find \(scannedPeripheral.peripheral.name ?? "")")
                 if canConnect {
-                    MFBLogger.shared.debug("Scanned and find \(scannedPeripheral.peripheral)")
-                    self?.scanningSubject.onNext(Result.success(scannedPeripheral))
+                    scannedPeripheral.peripheral.establishConnection()
+                        .subscribe(onNext: { (_) in
+                            let card = CardModel(name: "\(scannedPeripheral.peripheral.name ?? "")", uuid: "\(scannedPeripheral.peripheral.identifier)", isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: scannedPeripheral.peripheral)
+                            self?.startCardBinding(for: card)
+                        }, onError: { (error) in
+                            self?.disconnectionSubject.onNext(Result.error(error))
+                        }).disposed(by: (self?.disposeBag)!)
+                    self?.foundSafedome = true
                 }
                 }, onError: { [weak self] error in
-                    MFBLogger.shared.error("Scanned failed \(error)")
+                    AppDelegate.shared.log.error("Scanned failed \(error)")
                     self?.scanningSubject.onNext(Result.error(error))
             })
     }
@@ -152,15 +175,10 @@ final class MFRxBluetoothKitService {
         if peripheralsToReConnect.count < 1 {
             reConnectionSubject.onNext(Result.error(BluetoothServicesError.peripheralNil))
         }
-        if let realmObj = realmPeripheral.first {
-            // since it is reconnect notify the view to update before waiting for reading to be finished
-            let card = CardModel.init(name: realmObj.cardName, uuid: realmObj.uuid, isConnected: true, MACAddress: realmObj.MACAddress, firmwareRevisionString: realmObj.firmwareRevisionString, batteryLevel: realmObj.batteryLevel, connectionParameters: realmObj.connectionParameters, fsmParameters: realmObj.fsmParameters, peripheral: nil)
-            self.reConnectionSubject.onNext(Result.success(card))
-        }
         for peripheral in peripheralsToReConnect {
             let disposable = peripheral.establishConnection().subscribe({ (event) in
                 if let peripheral = event.element {
-                    MFBLogger.shared.debug("peripheral \(peripheral.identifier) status \(peripheral.isConnected)")
+                    AppDelegate.shared.log.debug("peripheral \(peripheral.identifier) status \(peripheral.isConnected)")
                     if peripheral.isConnected {
                         let card = CardModel.init(name: "\(peripheral.name ?? "")", uuid: peripheral.identifier.uuidString, isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: peripheral)
                         self.reconnectOrTurnOnCard(card)
@@ -277,9 +295,9 @@ extension MFRxBluetoothKitService {
                     }
                     self?.macAddressSubject.onNext(Result.success(macAddress))
                 }
-                MFBLogger.shared.debug("MACAddress read \(char.characteristic.value?.hexadecimalString ?? "")")
+                AppDelegate.shared.log.debug("MACAddress read \(char.characteristic.value?.hexadecimalString ?? "")")
                 }, onError: { [weak self] error in
-                    MFBLogger.shared.error("MACAddress read error \(error)")
+                    AppDelegate.shared.log.error("MACAddress read error \(error)")
                     self?.macAddressSubject.onNext(Result.error(error))
             })
         
@@ -306,10 +324,10 @@ extension MFRxBluetoothKitService {
             .subscribe(onNext: { [weak self] char in
                 if let value = char.characteristic.value {
                     self?.batterySubject.onNext(Result.success("\(value[0])"))
-                    MFBLogger.shared.debug("Read Battery \(value[0])")
+                    AppDelegate.shared.log.debug("Read Battery \(value[0])")
                 }
                 }, onError: { [weak self] error in
-                    MFBLogger.shared.error("Read Battery error: \(error)")
+                    AppDelegate.shared.log.error("Read Battery error: \(error)")
                     self?.batterySubject.onNext(Result.error(error))
             })
         
@@ -335,7 +353,7 @@ extension MFRxBluetoothKitService {
         let observable = isConnected ? connectedObservableCreator(): connectObservableCreator()
         let disposable = observable
             .subscribe(onNext: { [weak self] char in
-                MFBLogger.shared.debug("Set battery notification Success")
+                AppDelegate.shared.log.debug("Set battery notification Success")
                     self?.setBatteryNotificationSubject.onNext(Result.success(true))
                 }, onError: { [weak self] error in
                     self?.setBatteryNotificationSubject.onNext(Result.error(error))
@@ -354,7 +372,7 @@ extension MFRxBluetoothKitService {
         
         let connectedObservableCreator = { return peripheral.readValue(for: DeviceCharacteristic.firmwareRevisionString).asObservable() }
         let connectObservableCreator = {
-            return peripheral.establishConnection()
+                return peripheral.establishConnection()
                 .do(onNext: { [weak self] _ in
                     self?.observeDisconnect(for: peripheral)
                 })
@@ -366,10 +384,10 @@ extension MFRxBluetoothKitService {
                 if let value = char.characteristic.value {
                     let firmware = String.init(data: value, encoding: String.Encoding.utf8)
                     self?.firmwareVersionSubject.onNext(Result.success(firmware ?? "wrong encoding"))
-                    MFBLogger.shared.debug("Read Firmware: \(firmware ?? "wrong encoding")")
+                    AppDelegate.shared.log.debug("Read Firmware: \(firmware ?? "wrong encoding")")
                 }
                 }, onError: { [weak self] error in
-                    MFBLogger.shared.error("Read Firmware error: \(error)")
+                    AppDelegate.shared.log.error("Read Firmware error: \(error)")
                     self?.firmwareVersionSubject.onNext(Result.error(error))
             })
         
@@ -398,10 +416,10 @@ extension MFRxBluetoothKitService {
                 if let value = char.characteristic.value {
                     let str = value.hexadecimalString
                     self?.fsmParamsSubject.onNext(Result.success(str))
-                    MFBLogger.shared.debug("Read FSM: \(str)")
+                    AppDelegate.shared.log.debug("Read FSM: \(str)")
                 }
                 }, onError: { [weak self] error in
-                    MFBLogger.shared.error("Read FSM Error: \(error)")
+                    AppDelegate.shared.log.error("Read FSM Error: \(error)")
                     self?.fsmParamsSubject.onNext(Result.error(error))
             })
         
@@ -430,10 +448,10 @@ extension MFRxBluetoothKitService {
                 if let value = char.characteristic.value {
                     let str = value.hexadecimalString
                     self?.connectionParamsSubject.onNext(Result.success(str))
-                    MFBLogger.shared.debug("Read Connection Params: \(str)")
+                    AppDelegate.shared.log.debug("Read Connection Params: \(str)")
                 }
                 }, onError: { [weak self] error in
-                    MFBLogger.shared.error("Read Connection Params Error: \(error)")
+                    AppDelegate.shared.log.error("Read Connection Params Error: \(error)")
                     self?.connectionParamsSubject.onNext(Result.error(error))
             })
         
@@ -454,9 +472,9 @@ extension MFRxBluetoothKitService {
                 peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
                         let str = char.characteristic.value?.hexadecimalString
                         observer.onNext(Result.success(str ?? ""))
-                        MFBLogger.shared.debug("write Default Connection Parameters success \(str ?? "")")
+                        AppDelegate.shared.log.debug("write Default Connection Parameters success \(str ?? "")")
                 }) { (error) in
-                    MFBLogger.shared.error("write Default Connection Parameters error \(error)")
+                    AppDelegate.shared.log.error("write Default Connection Parameters error \(error)")
                     observer.onNext(Result.error(error))
                     }.disposed(by: self.disposeBag)
             }
@@ -472,9 +490,9 @@ extension MFRxBluetoothKitService {
                 peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
                     let str = char.characteristic.value?.hexadecimalString
                     observer.onNext(Result.success(str ?? ""))
-                    MFBLogger.shared.debug("Write FSM success: \(str ?? "")")
+                    AppDelegate.shared.log.debug("Write FSM success: \(str ?? "")")
                 }) { (error) in
-                    MFBLogger.shared.error("Write FSM error: \(error)")
+                    AppDelegate.shared.log.error("Write FSM error: \(error)")
                     observer.onNext(Result.error(error))
                     }.disposed(by: self.disposeBag)
             }
@@ -487,19 +505,21 @@ extension MFRxBluetoothKitService {
         var a = CardParameters.kMFSFindMonitorParameters
         let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFindMonitorParameters))
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.findMonitorParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            MFBLogger.shared.debug("write Find Monitor success: \(String(describing: char.characteristic.value?.hexadecimalString))")
+            AppDelegate.shared.log.debug("write Find Monitor success: \(String(describing: char.characteristic.value?.hexadecimalString))")
         }) { (error) in
-            MFBLogger.shared.error("write Find Monitor error: \(error)")
+            AppDelegate.shared.log.error("write Find Monitor error: \(error)")
             }.disposed(by: disposeBag)
     }
 }
 
 // MARK:- Card Flows
 extension MFRxBluetoothKitService {
-    func startCardBinding(for card: CardModel) {
+    private func startCardBinding(for card: CardModel) {
         readBattery(for: card)
         readFirmwareVersion(for: card)
         setBatteryNotificationOn(for: card)
+        startCardBindingSubject.onNext(Result.success(true))
+        
         //Write the Connection parameters
         let defaultWriteObserver = writeDefaultConnectionParameters(for: card)
         let fsmObserver = writeFSMParameters(for: card)
@@ -550,6 +570,7 @@ extension MFRxBluetoothKitService {
         readFirmwareVersion(for: card)
         setBatteryNotificationOn(for: card)
         readFSMParameters(for: card)
+        reConnectingInProgressSubject.onNext(Result.success(true))
         let defaultWriteObserver = writeDefaultConnectionParameters(for: card)
         
         let zip = Observable.zip(batteryObserver, firmwareVersionObserver, setBatteryNotificationObserver, defaultWriteObserver) {
@@ -607,9 +628,9 @@ extension MFRxBluetoothKitService {
         var a: UInt8 = UInt8(1)
         let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.LED, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            MFBLogger.shared.debug("turn on LED success: \(String(describing: char.characteristic.value?.hexadecimalString))")
+            AppDelegate.shared.log.debug("turn on LED success: \(String(describing: char.characteristic.value?.hexadecimalString))")
         }) { (error) in
-            MFBLogger.shared.error("turn on LED error: \(error)")
+            AppDelegate.shared.log.error("turn on LED error: \(error)")
             }.disposed(by: disposeBag)
     }
     
@@ -618,9 +639,9 @@ extension MFRxBluetoothKitService {
         var a: UInt8 = UInt8(0)
         let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.LED, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            MFBLogger.shared.debug("Turn off LED Success: \(String(describing: char.characteristic.value?.hexadecimalString))")
+            AppDelegate.shared.log.debug("Turn off LED Success: \(String(describing: char.characteristic.value?.hexadecimalString))")
         }) { (error) in
-            MFBLogger.shared.error("Turn Off LED error: \(error)")
+            AppDelegate.shared.log.error("Turn Off LED error: \(error)")
             }.disposed(by: disposeBag)
     }
     
@@ -630,24 +651,27 @@ extension MFRxBluetoothKitService {
             let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
             
             peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.cardOff, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-                MFBLogger.shared.debug("turn off card success: \(String(describing: char.characteristic.value?.hexadecimalString))")
+                AppDelegate.shared.log.debug("turn off card success: \(String(describing: char.characteristic.value?.hexadecimalString))")
                 self.turnOffCardSubject.onNext(Result.success(true))
             }) { (error) in
-                MFBLogger.shared.error("turn off card error: \(error)")
+                AppDelegate.shared.log.error("turn off card error: \(error)")
                 self.turnOffCardSubject.onNext(Result.error(error))
                 }.disposed(by: disposeBag)
         }
     }
     
     private func doDecommission(for peripheral: Peripheral) {
+        for (_, value) in peripheralConnections {
+            value.dispose()
+        }
         var a = CardParameters.kDecommissionFSMParameters
         let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters))
         let disposable = peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
-            MFBLogger.shared.debug("decommission success: \(String(describing: char.characteristic.value?.hexadecimalString))")
+            AppDelegate.shared.log.debug("decommission success: \(String(describing: char.characteristic.value?.hexadecimalString))")
             self.disconnect(peripheral)
             self.unlinkingSubject.onNext(Result.success(true))
         }) { (error) in
-            MFBLogger.shared.error("decommission error: \(error)")
+            AppDelegate.shared.log.error("decommission error: \(error)")
             self.unlinkingSubject.onNext(Result.error(error))
         }
         disposeBag.insert(disposable)

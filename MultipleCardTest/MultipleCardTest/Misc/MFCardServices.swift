@@ -71,3 +71,4 @@ enum DeviceCharacteristic: String, CharacteristicIdentifier {
         }
     }
 }
+

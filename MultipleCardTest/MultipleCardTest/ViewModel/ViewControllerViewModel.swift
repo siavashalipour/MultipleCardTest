@@ -14,7 +14,7 @@ import RealmSwift
 
 class DashboardViewModel {
     
-    private let bleKit = AppDelegate.bluetoothKitService
+    private let bleKit = MFRxBluetoothKitService.shared
     
     private let disposeBag = DisposeBag()
     // Get the default Realm
@@ -44,6 +44,12 @@ class DashboardViewModel {
     var unlinkCardObserver: Observable<Result<Bool, Error>> {
         return unlinkCardSubject.asObservable()
     }
+    var startCardBindingObserver: Observable<Result<Bool, Error>> {
+        return startCardBindingSubject.asObservable()
+    }
+    var reConnectingInProgressObserver: Observable<Result<Bool, Error>> {
+        return reConnectingInProgressSubject.asObservable()
+    }
     
     private var dataUpdatedPublisher = PublishSubject<Result<[CardModel], Error>>()
     private var disconnectPublisher = PublishSubject<Result<Peripheral, Error>>()
@@ -52,28 +58,36 @@ class DashboardViewModel {
     private var connectionToCardPublisher = PublishSubject<Result<Peripheral, Error>>()
     private var commissionPublisher = PublishSubject<Result<Bool, Error>>()
     private var unlinkCardSubject = PublishSubject<Result<Bool, Error>> ()
+    private var startCardBindingSubject = PublishSubject<Result<Bool, Error>>()
+    private var reConnectingInProgressSubject = PublishSubject<Result<Bool, Error>>()
     
+    private var connectionDisposables: [Disposable] = []
     func bind() {
-        bleKit.scanningOutput
-            .subscribe(onNext: { (result) in
-            switch result {
-            case .success(let scanned):
-                let card = CardModel(name: "\(scanned.peripheral.name ?? "")", uuid: "\(scanned.peripheral.identifier)", isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: scanned.peripheral)
-                _ = scanned.peripheral.establishConnection().subscribe({ (event) in
-                    if let peripheral = event.element {
-                        if peripheral.isConnected {
-                            self.bleKit.startCardBinding(for: card)
-                        }
-                    }
-                })
-
-            case .error(let error):
-                self.dataUpdatedPublisher.onNext(Result.error(error))
-            }
+//        bleKit.scanningOutput
+//            .subscribe(onNext: { (result) in
+//            switch result {
+//            case .success(let scanned):
+//                let card = CardModel(name: "\(scanned.peripheral.name ?? "")", uuid: "\(scanned.peripheral.identifier)", isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: scanned.peripheral)
+//                    scanned.peripheral.establishConnection()
+//                    .subscribe(onNext: { (_) in
+//                        self.startCardBindingSubject.onNext(Result.success(true))
+//                        self.bleKit.startCardBinding(for: card)
+//                    }, onError: { (error) in
+//                        self.startCardBindingSubject.onNext(Result.error(error))
+//                        AppDelegate.shared.log.error("Establishing connection :\(error)")
+//                    }).disposed(by: self.disposeBag)
+//
+//            case .error(let error):
+//                self.dataUpdatedPublisher.onNext(Result.error(error))
+//            }
+//        }, onError: { (error) in
+//            self.dataUpdatedPublisher.onNext(Result.error(error))
+//        }).disposed(by: disposeBag)
+        bleKit.startCardBindingObserver.subscribe(onNext: { (result) in
+            self.startCardBindingSubject.onNext(result)
         }, onError: { (error) in
-            self.dataUpdatedPublisher.onNext(Result.error(error))
+            self.startCardBindingSubject.onNext(Result.error(error))
         }).disposed(by: disposeBag)
-        
         bleKit.cardBindingObserver.subscribe(onNext: { (result) in
             switch result {
             case .success(let card):
@@ -94,6 +108,12 @@ class DashboardViewModel {
             }
         }, onError: { (error) in
             self.disconnectPublisher.onNext(Result.error(error))
+        }).disposed(by: disposeBag)
+        
+        bleKit.reConnectingInProgressObserver.subscribe(onNext: { (result) in
+            self.reConnectingInProgressSubject.onNext(result)
+        }, onError: { (error) in
+            self.reConnectingInProgressSubject.onNext(Result.error(error))
         }).disposed(by: disposeBag)
         
         bleKit.reConnectionOutput.subscribe(onNext: { (result) in
@@ -190,7 +210,7 @@ class DashboardViewModel {
         }
         var uuids: [UUID] = []
         for uuid in uuidStrings {
-            MFBLogger.shared.debug("Fetched \(uuid)")
+            AppDelegate.shared.log.debug("Fetched \(uuid)")
             if let aUUID = UUID.init(uuidString: uuid) {
                 uuids.append(aUUID)
             }

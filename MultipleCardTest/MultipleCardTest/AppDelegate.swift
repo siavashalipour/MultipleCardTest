@@ -7,17 +7,29 @@
 //
 
 import UIKit
+import SwiftyBeaver
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
-
-    static let bluetoothKitService: MFRxBluetoothKitService = MFRxBluetoothKitService()
+    let log = SwiftyBeaver.self
+    
+    static let shared: AppDelegate = AppDelegate()
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
+        // add log destinations. at least one is needed!
+        let console = ConsoleDestination()  // log to Xcode Console
         
+        // use custom format and set console output to short time, log level & message
+        console.format = "$DHH:mm:ss$d $L $M"
+        // add the destinations to SwiftyBeaver
+        log.addDestination(console)
+        
+        // start checking version
+        let updateManager = MFFirmwareUpdateManager.shared
+        updateManager.startChecking()
         return true
     }
 

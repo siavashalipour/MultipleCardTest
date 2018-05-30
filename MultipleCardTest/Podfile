@@ -6,10 +6,12 @@ target 'MultipleCardTest' do
   use_frameworks!
 
   # Pods for MultipleCardTest
-    pod 'RxSwift', '~> 4.0’
-    pod 'RxCocoa', '~> 4.0’
-    pod 'RxBluetoothKit', '~> 5.0'
-    pod 'SnapKit'
-    pod 'RealmSwift'
-    pod 'SwiftyBeaver'
+    pod 'RxSwift', '4.1.2'
+    pod 'RxCocoa', '4.1.2'
+    pod 'RxBluetoothKit', '5.1.0'
+    pod 'SnapKit', '4.0.0'
+    pod 'RealmSwift', '3.6.0'
+    pod 'SwiftyBeaver', '1.6.0'
+    pod 'Alamofire', '4.7.2'
 end
+

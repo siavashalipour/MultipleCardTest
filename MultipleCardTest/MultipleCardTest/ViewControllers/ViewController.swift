@@ -142,10 +142,30 @@ class ViewController: UIViewController {
             self.stopLoading()
         }).disposed(by: disposeBag)
         
+        vm.startCardBindingObserver.subscribe(onNext: { (result) in
+            self.scanningHelperView.isHidden = false
+            self.scanningHelperView.updateSubtitle(to: "Started card binding flow")
+        }, onError: { (error) in
+            self.stopLoading()
+        }).disposed(by: disposeBag)
+        
         vm.reconnectionObserver.subscribe(onNext: { (result) in
             switch result {
             case .success(_):
                 self.reloadTableViewOnMainThread()
+            case .error(_):
+                self.stopLoading()
+            }
+        }, onError: { (error) in
+            self.stopLoading()
+        }).disposed(by: disposeBag)
+        
+        vm.reConnectingInProgressObserver.subscribe(onNext: { (result) in
+            switch result {
+            case .success(_):
+                self.spinner.stopAnimating()
+                self.scanningHelperView.isHidden = false
+                self.scanningHelperView.updateSubtitle(to: "Re-Connecting...")
             case .error(_):
                 self.stopLoading()
             }
@@ -173,13 +193,13 @@ class ViewController: UIViewController {
                     if isReading {
                         self.scanningHelperView.updateSubtitle(to: "reading card data...")
                     }
-                    
                 }
             case .error(_):
+                self.stopLoading()
                 break
             }
         }, onError: { (_) in
-            
+            self.stopLoading()
         }).disposed(by: disposeBag)
         
         vm.unlinkCardObserver.subscribe(onNext: { (result) in
@@ -281,11 +301,10 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        vm.startScanning()
         guard let card = vm.item(at: indexPath) else { return }
         if let item = vm.realmObject(for: card) {
             let vc = PeripheralInfoViewController()
-            vc.vm = PeripheralInfoViewModel.init(with: item)
+            vc.vm = PeripheralInfoViewModel.init(with: item, peripheral: card.peripheral)
             navigationController?.pushViewController(vc, animated: true)
         }
     }
