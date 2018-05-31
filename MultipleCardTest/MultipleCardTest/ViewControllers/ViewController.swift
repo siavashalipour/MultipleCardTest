@@ -304,7 +304,7 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
         guard let card = vm.item(at: indexPath) else { return }
         if let item = vm.realmObject(for: card) {
             let vc = PeripheralInfoViewController()
-            vc.vm = PeripheralInfoViewModel.init(with: item, peripheral: card.peripheral)
+            vc.vm = PeripheralInfoViewModel.init(with: item, peripheral: card.peripheral!)
             navigationController?.pushViewController(vc, animated: true)
         }
     }

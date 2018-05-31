@@ -8,7 +8,7 @@
 
 import Foundation
 
-enum SPOTA_STATUS_VALUES: Int {
+enum SPOTA_STATUS_VALUES: Int8 {
     // Value zero must not be used !! Notifications are sent when status changes.
     case SRV_STARTED      = 0x01     // Valid memory device has been configured by initiator. No sleep state while in this mode
     case CMP_OK           = 0x02     // SPOTA process completed successfully.

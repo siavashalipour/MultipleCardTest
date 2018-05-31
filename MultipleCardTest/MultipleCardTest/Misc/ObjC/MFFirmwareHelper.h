@@ -20,6 +20,7 @@
 - (void)writePatchEndData:(NSData *)data;
 - (void)writeDefaultConnectionParameters;
 
+- (void)progress:(int)progress;
 @end
 
 @import CoreBluetooth;

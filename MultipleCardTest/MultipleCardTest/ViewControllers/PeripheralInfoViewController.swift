@@ -19,6 +19,8 @@ final class PeripheralInfoViewController: UIViewController {
             tableView.reloadData()
         }
     }
+    
+    private let disposeBag = DisposeBag()
     private lazy var tableView: UITableView = {
         let tableView = UITableView()
         tableView.register(PeripheralInfoCell.self, forCellReuseIdentifier: String(describing: PeripheralInfoCell.self))
@@ -50,6 +52,13 @@ final class PeripheralInfoViewController: UIViewController {
         btn.layer.cornerRadius = 5
         return btn
     }()
+    private lazy var progressTxt: UITextField = {
+        let txt = UITextField()
+        txt.textAlignment = .center
+        txt.textColor = .black
+        
+        return txt
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -57,10 +66,17 @@ final class PeripheralInfoViewController: UIViewController {
         bind()
     }
     private func bind() {
-        vm.bind()
+        vm.bind(updateBtn: updateBtn.rx.tap.asObservable())
         vm.shouldHideUpdateButtonObserver
             .bind(to: updateBtn.rx.isHidden)
-            .disposed(by: DisposeBag())
+            .disposed(by: disposeBag)
+        vm.shouldHideUpdateButtonObserver
+            .bind(to: progressTxt.rx.isHidden)
+            .disposed(by: disposeBag)
+        vm.shouldReloadDataObserver.subscribe { (_) in
+            self.tableView.reloadData()
+        }.disposed(by: disposeBag)
+        vm.progressText.asObservable().bind(to: progressTxt.rx.text).disposed(by: disposeBag)
     }
     
     private func setupUI() {
@@ -68,6 +84,7 @@ final class PeripheralInfoViewController: UIViewController {
         view.addSubview(tableView)
         view.addSubview(scanningHelperView)
         view.addSubview(updateBtn)
+        view.addSubview(progressTxt)
         
         tableView.snp.makeConstraints { (make) in
             make.top.left.right.equalToSuperview()
@@ -83,6 +100,11 @@ final class PeripheralInfoViewController: UIViewController {
             make.left.equalTo(16)
             make.centerX.equalToSuperview()
             make.top.equalTo(tableView.snp.bottom).offset(10)
+        }
+        progressTxt.snp.makeConstraints { (make) in
+            make.left.equalTo(16)
+            make.centerX.equalToSuperview()
+            make.top.equalTo(updateBtn.snp.bottom).offset(4)
         }
     }
 }

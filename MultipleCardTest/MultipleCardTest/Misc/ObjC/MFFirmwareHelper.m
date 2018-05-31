@@ -102,7 +102,7 @@ static UInt16 const kChunkSize  = 20;
         double progress = (double)(_blockStartByte + chunkStartByte + currChunkSize) / (double)dataLength;
         
         NSLog(@"%d%%", (int)(100 * progress));
-        
+        [_delegate progress:(int)(100 * progress)];
         // Send next n bytes of the patch
         char bytes[currChunkSize];
         [self.firmwareData getBytes:bytes range:NSMakeRange(_blockStartByte + chunkStartByte, currChunkSize)];
@@ -143,7 +143,7 @@ static UInt16 const kChunkSize  = 20;
 
 - (NSData *)rebootCommandData {
     
-    [_delegate updateStateToMFS_OTA_State_PatchCompleted];
+//    [_delegate updateStateToMFS_OTA_State_PatchCompleted];
     int suotaEnd = 0xFD000000;
     NSLog(@"Send SUOTA REBOOT command: %#010x", suotaEnd);
     NSData *suotaEndData = [NSData dataWithBytes:&suotaEnd length:sizeof(suotaEnd)];

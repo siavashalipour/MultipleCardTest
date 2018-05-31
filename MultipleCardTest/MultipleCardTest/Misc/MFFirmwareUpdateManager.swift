@@ -25,7 +25,7 @@ final class MFFirmwareUpdateManager {
         return nil
     }()
     private var checkInProgress: Bool = false
-    private var firmwareData: Data? {
+    private(set) var firmwareData: Data? {
         willSet {
             if let _ = newValue {
                 DispatchQueue.main.async {
@@ -64,7 +64,6 @@ final class MFFirmwareUpdateManager {
     
     private func bind() {
         let bleKit = MFRxBluetoothKitService.shared
-        
         bleKit.firmwareVersionObserver.subscribe(onNext: { (result) in
             switch result {
             case .success(let version):
@@ -219,7 +218,6 @@ final class MFFirmwareUpdateManager {
                 break
             }
         }
-        
         return finalText
     }
 }
