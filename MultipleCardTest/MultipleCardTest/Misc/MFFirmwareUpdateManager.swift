@@ -61,35 +61,47 @@ final class MFFirmwareUpdateManager {
     func startChecking() {
         self.bind()
     }
-    
-    private func bind() {
-        let bleKit = MFRxBluetoothKitService.shared
-        bleKit.firmwareVersionObserver.subscribe(onNext: { (result) in
-            switch result {
-            case .success(let version):
-                self.latestFirmwareDataOnDiskVersion = version
-                self.requestFirmwareUpdateCheck(for: version, completion: { (updateResult) in
-                    switch updateResult {
-                    case .checkingIsInProgress:
-                        print("checkingIsInProgress")
-                    case .isLatest:
-                        print("isLatest")
-                        self.needsToUpdateToLatestVersionSubject.onNext(Result.error(MFFirmwareError.isLatest))
-                    case .needsToUpdate(let newVersion):
-                        print("needsToUpdate")
-                        self.latestFirmwareDataOnDiskVersion = newVersion
-                        self.needsToUpdateToLatestVersionSubject.onNext(Result.success(newVersion))
-                    case .otaServerFailure(let error):
-                        self.needsToUpdateToLatestVersionSubject.onNext(Result.error(error))
-                    case .responseError:
-                        self.needsToUpdateToLatestVersionSubject.onNext(Result.error(MFFirmwareError.responseError))
-                        print("responseError")
-                    }
-                })
-            case .error(_):
-                break
+    private func requestFirmwareUpdate(for version: String) {
+        self.requestFirmwareUpdateCheck(for: version, completion: { (updateResult) in
+            switch updateResult {
+            case .checkingIsInProgress:
+                print("checkingIsInProgress")
+            case .isLatest:
+                print("isLatest")
+                self.needsToUpdateToLatestVersionSubject.onNext(Result.error(MFFirmwareError.isLatest))
+            case .needsToUpdate(let newVersion):
+                print("needsToUpdate")
+                self.latestFirmwareDataOnDiskVersion = newVersion
+                self.needsToUpdateToLatestVersionSubject.onNext(Result.success(newVersion))
+            case .otaServerFailure(let error):
+                self.needsToUpdateToLatestVersionSubject.onNext(Result.error(error))
+            case .responseError:
+                self.needsToUpdateToLatestVersionSubject.onNext(Result.error(MFFirmwareError.responseError))
+                print("responseError")
             }
-        }).disposed(by: disposableBag)
+        })
+    }
+    func bind(for monitor: Monitor) {
+        if self.latestFirmwareDataOnDiskVersion == "" {
+            requestFirmwareUpdate(for: monitor.realmCard.firmwareRevisionString)
+        }
+    }
+    private func bind() {
+        if let fetched = RealmManager.shared.fetchAllMonitors(), let cardObj = fetched.first {
+            requestFirmwareUpdate(for: cardObj.firmwareRevisionString)
+        } else {
+            let bleKit = MFRxBluetoothKitService.shared
+            bleKit.firmwareVersionObserver.subscribe(onNext: { (result) in
+                switch result {
+                case .success(let version):
+                    self.latestFirmwareDataOnDiskVersion = version
+                    self.requestFirmwareUpdate(for: version)
+                case .error(_):
+                    break
+                }
+            }).disposed(by: disposableBag)
+        }
+        
     }
     
     func requestFirmwareUpdateCheck(for version: String, completion: @escaping (_ result: MFFirmwareUpdateResult) -> Void) {

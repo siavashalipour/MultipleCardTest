@@ -11,18 +11,33 @@ import RealmSwift
 import RxBluetoothKit
 import Realm
 
-struct CardModel {    
-    var name: String
-    var uuid: String
-    var isConnected: Bool
-    var MACAddress: String
-    var firmwareRevisionString: String
-    var batteryLevel: String
-    var connectionParameters: String
-    var fsmParameters: String
-    var peripheral: Peripheral?
-    
-}
+//struct CardModel {    
+//    var name: String
+//    var uuid: String
+//    var isConnected: Bool
+//    var MACAddress: String
+//    var firmwareRevisionString: String
+//    var batteryLevel: String
+//    var connectionParameters: String
+//    var fsmParameters: String
+//    var peripheral: Peripheral?
+//}
+//extension CardModel {
+//    
+//    init(with peripheral: Peripheral) {
+//        self.name = peripheral.name ?? ""
+//        self.uuid = peripheral.identifier.uuidString
+//        self.isConnected = false
+//        self.MACAddress = ""
+//        self.firmwareRevisionString = ""
+//        self.batteryLevel = ""
+//        self.connectionParameters = ""
+//        self.fsmParameters = ""
+//        self.peripheral = peripheral
+//    }
+//}
+
+typealias Monitor = (realmCard: RealmCardPripheral, peripheral: Peripheral)
 
 class RealmCardPripheral: Object {
     
@@ -36,6 +51,11 @@ class RealmCardPripheral: Object {
     
     override static func primaryKey() -> String? {
         return "uuid"
+    }
+    
+    func update(for peripheral: Peripheral) {
+        cardName = peripheral.name ?? ""
+        uuid = peripheral.identifier.uuidString
     }
 }
 

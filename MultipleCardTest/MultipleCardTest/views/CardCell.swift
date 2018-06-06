@@ -74,7 +74,7 @@ final class CardCell: UITableViewCell {
         }
     }
     
-    func config(with data: CardModel) {
-        title.text = "\(data.uuid)"
+    func config(with data: Monitor) {
+        title.text = "\(data.realmCard.uuid)"
     }
 }

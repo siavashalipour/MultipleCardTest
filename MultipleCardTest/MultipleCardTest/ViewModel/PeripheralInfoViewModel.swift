@@ -42,8 +42,9 @@ class PeripheralInfoViewModel {
     
     private var shouldReloadDataSubject = PublishSubject<Bool>()
     
-    init(with realmPeripheral: RealmCardPripheral, peripheral: Peripheral) {
-        self.selectedRealmPeripheral = realmPeripheral
+    init(with monitor: Monitor) {
+        self.selectedRealmPeripheral = monitor.realmCard
+        let realmPeripheral = monitor.realmCard
         var item = PeripheralInfoCellData.init(title: "Battery", subtitle: realmPeripheral.batteryLevel + "%")
         ds.append(item)
         item = PeripheralInfoCellData.init(title: "MACAddress", subtitle: realmPeripheral.MACAddress)
@@ -54,7 +55,7 @@ class PeripheralInfoViewModel {
         ds.append(item)
         item = PeripheralInfoCellData.init(title: "Connection", subtitle: realmPeripheral.connectionParameters)
         ds.append(item)
-        self.peripheral = peripheral
+        self.peripheral = monitor.peripheral
         
     }
     public func bind(updateBtn: Observable<Void>) {
@@ -172,6 +173,13 @@ class PeripheralInfoViewModel {
                 switch result {
                 case .success(let version):
                     self.ds[2] = PeripheralInfoCellData.init(title: "Firmware", subtitle: version)
+                    // update the realm object
+                    if let realm = RealmManager.shared.getRealmObject(for: self.peripheral) {
+                        RealmManager.shared.beginWrite()
+                        realm.firmwareRevisionString = version
+                        RealmManager.shared.commitWrite()
+                        RealmManager.shared.addOrUpdate(monitor: (realm, self.peripheral))
+                    }
                 case .error(_):
                     break
                 }
@@ -200,7 +208,9 @@ class PeripheralInfoViewModel {
             var a = CardParameters.kFastConnectionParameters
             let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSConnectionParameters))
             let disposable = self.peripheral.writeValue(Data(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (_) in
-                observer.onNext(true)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: {
+                    observer.onNext(true)
+                })
                 debugPrint("!!! write suceess fast connectionParameters")
             }, onError: { (error) in
                 observer.onError(error)
@@ -311,7 +321,6 @@ extension PeripheralInfoViewModel: MFFirmwareHelperDelegate {
     
     func writeOtaPatchDataPath(_ data: Data!) {
         let disposable = peripheral.writeValue(data, for: DeviceCharacteristic.otaPatchData, type: CBCharacteristicWriteType.withoutResponse).subscribe(onSuccess: { (_) in
-            debugPrint("!!! write suceess otaPatchData path")
         }, onError: { (error) in
             debugPrint("!!! wirte otaPatchData :\(error)")
         })

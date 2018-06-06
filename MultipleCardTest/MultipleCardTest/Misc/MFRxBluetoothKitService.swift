@@ -15,9 +15,13 @@ import RealmSwift
 
 final class MFRxBluetoothKitService {
     
+    static let shared: MFRxBluetoothKitService = MFRxBluetoothKitService.init()
+
     typealias Disconnection = (Peripheral, DisconnectionReason?)
     // MARK: - Public outputs
-    
+        var scanningOutput: Observable<Result<ScannedPeripheral, Error>> {
+            return scanningSubject.share(replay: 1, scope: .forever).asObservable()
+        }
     var discoveredServicesOutput: Observable<Result<[Service], Error>> {
         return discoveredServicesSubject.asObservable()
     }
@@ -42,7 +46,7 @@ final class MFRxBluetoothKitService {
         return updatedValueAndNotificationSubject.asObservable()
     }
     
-    var reConnectionOutput: Observable<Result<CardModel, Error>> {
+    var reConnectionOutput: Observable<Result<Monitor, Error>> {
         return reConnectionSubject.asObservable()
     }
     
@@ -64,7 +68,7 @@ final class MFRxBluetoothKitService {
     var setBatteryNotificationObserver: Observable<Result<Bool, Error>> {
         return setBatteryNotificationSubject.asObservable()
     }
-    var cardBindingObserver: Observable<Result<CardModel, Error>> {
+    var cardBindingObserver: Observable<Result<Monitor, Error>> {
         return cardBindingSubject.asObservable()
     }
     var turnOffCardObserver: Observable<Result<Bool, Error>> {
@@ -86,8 +90,8 @@ final class MFRxBluetoothKitService {
     private let readValueSubject = PublishSubject<Result<Characteristic, Error>>()
     private let writeValueSubject = PublishSubject<Result<Characteristic, Error>>()
     private let updatedValueAndNotificationSubject = PublishSubject<Result<Characteristic, Error>>()
-    private let reConnectionSubject = PublishSubject<Result<CardModel, Error>>()
-    private let cardBindingSubject = PublishSubject<Result<CardModel, Error>>()
+    private let reConnectionSubject = PublishSubject<Result<Monitor, Error>>()
+    private let cardBindingSubject = PublishSubject<Result<Monitor, Error>>()
     private let batterySubject = PublishSubject<Result<String, Error>>()
     private let macAddressSubject = PublishSubject<Result<String, Error>>()
     private let fsmParamsSubject = PublishSubject<Result<String, Error>>()
@@ -97,9 +101,8 @@ final class MFRxBluetoothKitService {
     private let turnOffCardSubject = PublishSubject<Result<Bool, Error>>()
     private let unlinkingSubject = PublishSubject<Result<Bool, Error>>()
     private let discoveredCharacteristicsSubject = PublishSubject<Result<[Characteristic], Error>>()
-    private var startCardBindingSubject = PublishSubject<Result<Bool, Error>>()
-    private var reConnectingInProgressSubject = PublishSubject<Result<Bool, Error>>()
-    
+    private let startCardBindingSubject = PublishSubject<Result<Bool, Error>>()
+    private let reConnectingInProgressSubject = PublishSubject<Result<Bool, Error>>()
     private let centralManager = CentralManager(queue: .main, options: [CBCentralManagerOptionRestoreIdentifierKey: "some.very.unique.key" as AnyObject])
     private let scheduler: ConcurrentDispatchQueueScheduler
     private let disposeBag = DisposeBag()
@@ -118,7 +121,6 @@ final class MFRxBluetoothKitService {
     private let kRSSIThreshold: Double = -60
     private let kReadingTimeout: Double = 40
 
-    static let shared: MFRxBluetoothKitService = MFRxBluetoothKitService.init()
     // MARK: - Initialization
     private init() {
         let timerQueue = DispatchQueue(label: Constant.Strings.defaultDispatchQueueLabel)
@@ -154,8 +156,10 @@ final class MFRxBluetoothKitService {
                 if canConnect {
                     scannedPeripheral.peripheral.establishConnection()
                         .subscribe(onNext: { (_) in
-                            let card = CardModel(name: "\(scannedPeripheral.peripheral.name ?? "")", uuid: "\(scannedPeripheral.peripheral.identifier)", isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: scannedPeripheral.peripheral)
-                            self?.startCardBinding(for: card)
+                            let card = RealmCardPripheral()
+                            card.update(for: scannedPeripheral.peripheral)
+                            let monitor = (card, scannedPeripheral.peripheral)
+                            self?.startCardBinding(for: monitor)
                         }, onError: { (error) in
                             self?.disconnectionSubject.onNext(Result.error(error))
                         }).disposed(by: (self?.disposeBag)!)
@@ -166,38 +170,20 @@ final class MFRxBluetoothKitService {
                     self?.scanningSubject.onNext(Result.error(error))
             })
     }
+    
+    func observeMangerStatus() -> Observable<BluetoothState> {
+        return centralManager.observeState().startWith(centralManager.state)
+    }
+    
     func tryReconnect(to peripherals: [UUID], realmPeripheral:  Results<RealmCardPripheral>) {
         let peripheralsToReConnect = self.centralManager.retrievePeripherals(withIdentifiers: peripherals)
         if peripheralsToReConnect.count < 1 {
             reConnectionSubject.onNext(Result.error(BluetoothServicesError.peripheralNil))
         }
-        doReccursion(peripherals: peripheralsToReConnect)
+        reconnectCardLinking(peripherals: peripheralsToReConnect)
         
     }
-    private func doReccursion(peripherals: [Peripheral]) {
-        var copyPeripherals = peripherals
-        if copyPeripherals.count == 0 { return }
-        let peripheral = copyPeripherals.removeFirst()
-        let disposable = peripheral.establishConnection().subscribe({ (event) in
-            if let peripheral = event.element {
-                AppDelegate.shared.log.debug("peripheral \(peripheral.identifier) status \(peripheral.isConnected)")
-                if peripheral.isConnected {
-                    let card = CardModel.init(name: "\(peripheral.name ?? "")", uuid: peripheral.identifier.uuidString, isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: peripheral)
-                    self.reconnectOrTurnOnCard(card).subscribe(onNext: { (result) in
-                        self.reConnectionSubject.onNext(result)
-                        self.doReccursion(peripherals: copyPeripherals)
-                    }, onError: { (error) in
-                        
-                    }).disposed(by: self.disposeBag)
-                }
-            }
-        })
-        if peripheral.isConnected {
-            disposeBag.insert(disposable)
-            peripheralConnections[peripheral] = disposable
-        }
-        
-    }
+    
     func stopScanning() {
         guard let scanningDisposable = scanningDisposable else { return }
         scanningDisposable.dispose()
@@ -257,10 +243,36 @@ final class MFRxBluetoothKitService {
     }
     
     // MARK: - Private methods
-    
+    private func reconnectCardLinking(peripherals: [Peripheral]) {
+        var copyPeripherals = peripherals
+        if copyPeripherals.count == 0 { return }
+        // notify the observer that reconnection process is about to start
+        reConnectingInProgressSubject.onNext(Result.success(true))
+        let peripheral = copyPeripherals.removeFirst()
+        let disposable = peripheral.establishConnection().subscribe({ (event) in
+            if let peripheral = event.element {
+                AppDelegate.shared.log.debug("peripheral \(peripheral.identifier) status \(peripheral.isConnected)")
+                if peripheral.isConnected {
+                    if let card = RealmManager.shared.getRealmObject(for: peripheral) {
+                        MFFirmwareUpdateManager.shared.bind(for: (card, peripheral))
+                        self.reconnectOrTurnOnMonitor((card, peripheral)).subscribe(onNext: { (result) in
+                            self.reConnectionSubject.onNext(result)
+                            self.reconnectCardLinking(peripherals: copyPeripherals)
+                        }, onError: { (error) in
+                            
+                        }).disposed(by: self.disposeBag)
+                    }
+                }
+            }
+        })
+        if peripheral.isConnected {
+            disposeBag.insert(disposable)
+            peripheralConnections[peripheral] = disposable
+        }
+    }
     // When you observe disconnection from a peripheral, you want to be sure that you take an action on both .next and
     // .error events. For instance, when your device enters BluetoothState.poweredOff, you will receive an .error event.
-    func observeDisconnect(for peripheral: Peripheral) {
+    private func observeDisconnect(for peripheral: Peripheral) {
         centralManager.observeDisconnect(for: peripheral).subscribe(onNext: { [unowned self] (peripheral, reason) in
             self.disconnectionSubject.onNext(Result.success((peripheral, reason)))
             self.disconnect(peripheral)
@@ -271,8 +283,8 @@ final class MFRxBluetoothKitService {
 }
 // MARK:- Readings
 extension MFRxBluetoothKitService {
-    func readMACAddress(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    func readMACAddress(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         let isConnected = peripheral.isConnected
         
         let connectedObservableCreator = { return peripheral.readValue(for: DeviceCharacteristic.MACAddress).asObservable() }
@@ -311,8 +323,8 @@ extension MFRxBluetoothKitService {
         }
     }
     
-    func readBattery(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    func readBattery(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         let isConnected = peripheral.isConnected
         
         let connectedObservableCreator = { return peripheral.readValue(for: DeviceCharacteristic.batteryLevel).asObservable() }
@@ -341,8 +353,8 @@ extension MFRxBluetoothKitService {
         }
     }
     
-    func setBatteryNotificationOn(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    func setBatteryNotificationOn(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         let isConnected = peripheral.isConnected
         
         let connectedObservableCreator = { return peripheral.observeValueUpdateAndSetNotification(for: DeviceCharacteristic.batteryLevel).asObservable() }
@@ -407,8 +419,8 @@ extension MFRxBluetoothKitService {
         }
     }
     
-    private func readFirmwareVersion(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    private func readFirmwareVersion(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         let isConnected = peripheral.isConnected
         
         let connectedObservableCreator = { return peripheral.readValue(for: DeviceCharacteristic.firmwareRevisionString).asObservable() }
@@ -438,8 +450,8 @@ extension MFRxBluetoothKitService {
         }
     }
     
-    private func readFSMParameters(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    private func readFSMParameters(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         let isConnected = peripheral.isConnected
         
         let connectedObservableCreator = { return peripheral.readValue(for: DeviceCharacteristic.fsmParameters).asObservable() }
@@ -469,8 +481,8 @@ extension MFRxBluetoothKitService {
         }
     }
     
-    private func readConnectionParameters(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    private func readConnectionParameters(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         let isConnected = peripheral.isConnected
         
         let connectedObservableCreator = { return peripheral.readValue(for: DeviceCharacteristic.connectionParameters).asObservable() }
@@ -502,9 +514,9 @@ extension MFRxBluetoothKitService {
 }
 // MARK:- Writings
 extension MFRxBluetoothKitService {
-    private func writeDefaultConnectionParameters(for card: CardModel) -> Observable<Result<String, Error>> {
+    private func writeDefaultConnectionParameters(for monitor: Monitor) -> Observable<Result<String, Error>> {
         return Observable.create { (observer) -> Disposable in
-            if let peripheral = card.peripheral {
+            let peripheral = monitor.peripheral
                 var a = CardParameters.kDefaultConnectionParameters
                 let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSConnectionParameters))
                 peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.connectionParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
@@ -515,14 +527,14 @@ extension MFRxBluetoothKitService {
                     AppDelegate.shared.log.error("write Default Connection Parameters error \(error)")
                     observer.onNext(Result.error(error))
                     }.disposed(by: self.disposeBag)
-            }
+        
             return Disposables.create()
         }
 
     }
-    private func writeFSMParameters(for card: CardModel) -> Observable<Result<String, Error>> {
+    private func writeFSMParameters(for monitor: Monitor) -> Observable<Result<String, Error>> {
         return Observable.create({ (observer) -> Disposable in
-            if let peripheral = card.peripheral {
+            let peripheral = monitor.peripheral
                 var a = CardParameters.kDefaultFSMParameters
                 let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters))
                 peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
@@ -533,13 +545,13 @@ extension MFRxBluetoothKitService {
                     AppDelegate.shared.log.error("Write FSM error: \(error)")
                     observer.onNext(Result.error(error))
                     }.disposed(by: self.disposeBag)
-            }
+            
             return Disposables.create()
         })
 
     }
-    private func writeFindMonitorParameters(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    private func writeFindMonitorParameters(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         var a = CardParameters.kMFSFindMonitorParameters
         let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFindMonitorParameters))
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.findMonitorParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
@@ -552,95 +564,82 @@ extension MFRxBluetoothKitService {
 
 // MARK:- Card Flows
 extension MFRxBluetoothKitService {
-    private func startCardBinding(for card: CardModel) {
-        readBattery(for: card)
-        readFirmwareVersion(for: card)
-        setBatteryNotificationOn(for: card)
+    private func startCardBinding(for monitor: Monitor) {
+        readBattery(for: monitor)
+        readFirmwareVersion(for: monitor)
+        setBatteryNotificationOn(for: monitor)
         startCardBindingSubject.onNext(Result.success(true))
         
         //Write the Connection parameters
-        let defaultWriteObserver = writeDefaultConnectionParameters(for: card)
-        let fsmObserver = writeFSMParameters(for: card)
+        let defaultWriteObserver = writeDefaultConnectionParameters(for: monitor)
+        let fsmObserver = writeFSMParameters(for: monitor)
         
         let zip = Observable.zip(batteryObserver, firmwareVersionObserver, defaultWriteObserver, fsmObserver) {
             return (batteryLevel: $0, firmware: $1, defaultWrite: $2, fsm: $3)
             }
         
-        var cardCopy = card
+        let monitorCopy = monitor
         zip.subscribe(onNext: { (batteryLevel, firmware, defaultWrite, fsm) in
+            RealmManager.shared.beginWrite()
             switch batteryLevel {
             case .success(let battery):
-                cardCopy.batteryLevel = battery
+                monitorCopy.realmCard.batteryLevel = battery
             case .error(let error):
                 self.cardBindingSubject.onNext(Result.error(error))
                 break
             }
             switch fsm {
             case .success(let fsm):
-                cardCopy.fsmParameters = fsm
+                monitorCopy.realmCard.fsmParameters = fsm
             case .error(let error):
                 self.cardBindingSubject.onNext(Result.error(error))
                 break
             }
             switch defaultWrite {
             case .success(let connection):
-                cardCopy.connectionParameters = connection
+                monitorCopy.realmCard.connectionParameters = connection
             case .error(let error):
                 self.cardBindingSubject.onNext(Result.error(error))
                 break
             }
             switch firmware {
             case .success(let firmware):
-                cardCopy.firmwareRevisionString = firmware
+                monitorCopy.realmCard.firmwareRevisionString = firmware
             case .error(let error):
                 self.cardBindingSubject.onNext(Result.error(error))
                 break
             }
-            self.cardBindingSubject.onNext(Result.success(cardCopy))
+            RealmManager.shared.commitWrite()
+            self.cardBindingSubject.onNext(Result.success(monitorCopy))
         }, onError: { (error) in
             self.cardBindingSubject.onNext(Result.error(error))
         }).disposed(by: disposeBag)
         
     }
     
-    func reconnectOrTurnOnCard(_ card: CardModel) -> Observable<Result<CardModel, Error>> {
+    func reconnectOrTurnOnMonitor(_ monitor: Monitor) -> Observable<Result<Monitor, Error>> {
         
         return Observable.create { (observer) -> Disposable in
             
-            self.readBattery(for: card)
-            self.readFirmwareVersion(for: card)
-            self.setBatteryNotificationOn(for: card)
-            self.readFSMParameters(for: card)
+            self.readBattery(for: monitor)
+            self.setBatteryNotificationOn(for: monitor)
             self.reConnectingInProgressSubject.onNext(Result.success(true))
-            let defaultWriteObserver = self.writeDefaultConnectionParameters(for: card)
             
-            let zip = Observable.zip(self.batteryObserver, self.firmwareVersionObserver, self.setBatteryNotificationObserver, defaultWriteObserver) {
-                return (batteryLevel: $0, firmware: $1, batteryNotification: $2, defaultWrite: $3)
+            let zip = Observable.zip(self.batteryObserver, self.setBatteryNotificationObserver) {
+                return (batteryLevel: $0, batteryNotification: $1)
             }
-            var cardCopy = card
-            zip.subscribe(onNext: { (batteryLevel, firmware, batteryNotification, defaultWrite) in
+            let monitorCopy = monitor
+            zip.subscribe(onNext: { (batteryLevel, batteryNotification) in
+                RealmManager.shared.beginWrite()
                 switch batteryLevel {
                 case .success(let battery):
-                    cardCopy.batteryLevel = battery
+                    monitorCopy.realmCard.batteryLevel = battery
                 case .error(let error):
                     observer.onNext(Result.error(error))
                     break
                 }
-                switch defaultWrite {
-                case .success(let connection):
-                    cardCopy.connectionParameters = connection
-                case .error(let error):
-                    observer.onNext(Result.error(error))
-                    break
-                }
-                switch firmware {
-                case .success(let firmware):
-                    cardCopy.firmwareRevisionString = firmware
-                case .error(let error):
-                    observer.onNext(Result.error(error))
-                    break
-                }
-                observer.onNext(Result.success(cardCopy))
+                RealmManager.shared.commitWrite()
+                observer.onNext(Result.success(monitorCopy))
             }, onError: { (error) in
                 observer.onNext(Result.error(error))
             }).disposed(by: self.disposeBag)
@@ -651,7 +650,7 @@ extension MFRxBluetoothKitService {
         
     }
     
-    func doOTA(for card: CardModel) {
+    func doOTA(for monitor: Monitor) {
         //        App (Master) reads the FW battery
         //        App (Master) writes the Faster connection parameters as follows
         //        Min Interval = 16
@@ -664,12 +663,12 @@ extension MFRxBluetoothKitService {
         //        App re-connects with the card (Re-connection flow comes into action)
     }
     
-    func decommission(for card: CardModel) {
-        unlink(card)
+    func decommission(for monitor: Monitor) {
+        unlink(monitor)
     }
     
-    func turnOnLED(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    func turnOnLED(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         var a: UInt8 = UInt8(1)
         let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.LED, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
@@ -679,8 +678,8 @@ extension MFRxBluetoothKitService {
             }.disposed(by: disposeBag)
     }
     
-    func turnOffLED(for card: CardModel) {
-        guard let peripheral = card.peripheral else { return }
+    func turnOffLED(for monitor: Monitor) {
+        let peripheral = monitor.peripheral
         var a: UInt8 = UInt8(0)
         let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
         peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.LED, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
@@ -690,8 +689,8 @@ extension MFRxBluetoothKitService {
             }.disposed(by: disposeBag)
     }
     
-    func trunOff(_ card: CardModel) {
-        if let peripheral = card.peripheral {
+    func trunOff(_ monitor: Monitor) {
+        let peripheral = monitor.peripheral
             var a: UInt8 = UInt8(1)
             let data = NSData.init(bytes: &a, length: UInt8.bitWidth)
             
@@ -702,13 +701,11 @@ extension MFRxBluetoothKitService {
                 AppDelegate.shared.log.error("turn off card error: \(error)")
                 self.turnOffCardSubject.onNext(Result.error(error))
                 }.disposed(by: disposeBag)
-        }
+        
     }
     
     private func doDecommission(for peripheral: Peripheral) {
-        for (_, value) in peripheralConnections {
-            value.dispose()
-        }
+        peripheralConnections[peripheral]?.disposed(by: disposeBag)
         var a = CardParameters.kDecommissionFSMParameters
         let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters))
         let disposable = peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { (char) in
@@ -720,15 +717,13 @@ extension MFRxBluetoothKitService {
             self.unlinkingSubject.onNext(Result.error(error))
         }
         disposeBag.insert(disposable)
-        peripheralConnections[peripheral] = disposable
     }
     
-    private func unlink(_ card: CardModel) {
-        if let peripheral = card.peripheral {
+    private func unlink(_ monitor: Monitor) {
+        let peripheral = monitor.peripheral
             if !peripheral.isConnected {
                 centralManager.centralManager.connect(peripheral.peripheral, options: nil)
             }
             doDecommission(for: peripheral)
-        }
     }
 }

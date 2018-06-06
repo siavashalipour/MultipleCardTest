@@ -69,18 +69,12 @@ class ViewController: UIViewController {
         spinner.hidesWhenStopped = true
         return spinner
     }()
-    override func viewWillAppear(_ animated: Bool) {
-        super.viewWillAppear(animated)
-        vm.getPeripheralsIfAny()
-    }
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
         startObservingViewModel()
         vm.bind()
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { // give the bluetooth states time to get to .poweredOn
-            self.reconnect()
-        }
+        spinner.startAnimating()
     }
     private func setupUI() {
         view.addSubview(settingBtn)
@@ -131,6 +125,20 @@ class ViewController: UIViewController {
         
     }
     private func startObservingViewModel() {
+        vm.scanningError.subscribe { (event) in
+            if let result = event.element {
+                switch result {
+                case .success(_):
+                    break
+                case .error(let error):
+                    self.scanningHelperView.updateSubtitle(to: "\(error)")
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: {
+                        self.stopLoading()
+                    })
+                }
+            }
+        }.disposed(by: disposeBag)
+        
         vm.dataUpdatedObserver.subscribe(onNext: { (result) in
             switch result {
             case .success(_):
@@ -239,10 +247,6 @@ class ViewController: UIViewController {
         scanningHelperView.shouldShowConnected(false)
         scanningHelperView.updateSubtitle(to: "Scanning...")
     }
-    private func reconnect() {
-        spinner.startAnimating()
-        vm.reconnect()
-    }
 }
 extension ViewController: UITableViewDataSource, UITableViewDelegate {
     func numberOfSections(in tableView: UITableView) -> Int {
@@ -301,11 +305,9 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        guard let card = vm.item(at: indexPath) else { return }
-        if let item = vm.realmObject(for: card) {
+        guard let monitor = vm.item(at: indexPath) else { return }
             let vc = PeripheralInfoViewController()
-            vc.vm = PeripheralInfoViewModel.init(with: item, peripheral: card.peripheral!)
+            vc.vm = PeripheralInfoViewModel.init(with: monitor)
             navigationController?.pushViewController(vc, animated: true)
         }
-    }
 }

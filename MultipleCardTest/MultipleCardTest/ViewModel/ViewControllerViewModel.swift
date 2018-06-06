@@ -10,32 +10,31 @@ import Foundation
 import CoreBluetooth
 import RxBluetoothKit
 import RxSwift
-import RealmSwift
 
 class DashboardViewModel {
     
     private let bleKit = MFRxBluetoothKitService.shared
     
     private let disposeBag = DisposeBag()
-    // Get the default Realm
-    private let realm = try! Realm()
-    private var fetchedPeripherals: Results<RealmCardPripheral>?
 
-    private var ds: [CardModel] = []
+    private var ds: [Monitor] = []
     
-    var dataUpdatedObserver: Observable<Result<[CardModel], Error>> {
+    var scanningError: Observable<Result<Bool, Error>> {
+        return scanningSubject.asObservable()
+    }
+    var dataUpdatedObserver: Observable<Result<[Monitor], Error>> {
         return dataUpdatedPublisher.asObservable()
     }
     var disconnectObserver: Observable<Result<Peripheral, Error>> {
         return disconnectPublisher.asObservable()
     }
-    var reconnectionObserver: Observable<Result<CardModel, Error>> {
+    var reconnectionObserver: Observable<Result<Monitor, Error>> {
         return reconnectionPublisher.asObservable()
     }
     var readingCardObserver: Observable<Result<Bool, Error>> {
         return readingCardPublisher.asObservable()
     }
-    var connectionToCardObserver: Observable<Result<Peripheral, Error>> {
+    var connectionToCardObserver: Observable<Result<Monitor, Error>> {
         return connectionToCardPublisher.asObservable()
     }
     var commissionObserver: Observable<Result<Bool, Error>>  {
@@ -51,38 +50,39 @@ class DashboardViewModel {
         return reConnectingInProgressSubject.asObservable()
     }
     
-    private var dataUpdatedPublisher = PublishSubject<Result<[CardModel], Error>>()
+    private var dataUpdatedPublisher = PublishSubject<Result<[Monitor], Error>>()
     private var disconnectPublisher = PublishSubject<Result<Peripheral, Error>>()
-    private var reconnectionPublisher = PublishSubject<Result<CardModel, Error>>()
+    private var reconnectionPublisher = PublishSubject<Result<Monitor, Error>>()
     private var readingCardPublisher = PublishSubject<Result<Bool, Error>>()
-    private var connectionToCardPublisher = PublishSubject<Result<Peripheral, Error>>()
+    private var connectionToCardPublisher = PublishSubject<Result<Monitor, Error>>()
     private var commissionPublisher = PublishSubject<Result<Bool, Error>>()
     private var unlinkCardSubject = PublishSubject<Result<Bool, Error>> ()
     private var startCardBindingSubject = PublishSubject<Result<Bool, Error>>()
     private var reConnectingInProgressSubject = PublishSubject<Result<Bool, Error>>()
+    private var scanningSubject = PublishSubject<Result<Bool, Error>>()
     
     private var connectionDisposables: [Disposable] = []
     func bind() {
-//        bleKit.scanningOutput
-//            .subscribe(onNext: { (result) in
-//            switch result {
-//            case .success(let scanned):
-//                let card = CardModel(name: "\(scanned.peripheral.name ?? "")", uuid: "\(scanned.peripheral.identifier)", isConnected: true, MACAddress: "", firmwareRevisionString: "", batteryLevel: "", connectionParameters: "", fsmParameters: "", peripheral: scanned.peripheral)
-//                    scanned.peripheral.establishConnection()
-//                    .subscribe(onNext: { (_) in
-//                        self.startCardBindingSubject.onNext(Result.success(true))
-//                        self.bleKit.startCardBinding(for: card)
-//                    }, onError: { (error) in
-//                        self.startCardBindingSubject.onNext(Result.error(error))
-//                        AppDelegate.shared.log.error("Establishing connection :\(error)")
-//                    }).disposed(by: self.disposeBag)
-//
-//            case .error(let error):
-//                self.dataUpdatedPublisher.onNext(Result.error(error))
-//            }
-//        }, onError: { (error) in
-//            self.dataUpdatedPublisher.onNext(Result.error(error))
-//        }).disposed(by: disposeBag)
+        
+        bleKit.scanningOutput.subscribe { (result) in
+            if let element = result.element {
+                switch element {
+                case .success(_):
+                    break
+                case .error(let error):
+                    self.scanningSubject.onNext(Result.error(error))
+                }
+            }
+        }.disposed(by: disposeBag)
+        
+        bleKit.observeMangerStatus()
+            .filter {
+                $0 == .poweredOn
+            }.subscribeOn(MainScheduler.instance)
+            .subscribe { (_) in
+                self.reconnect()
+            }.disposed(by: disposeBag)
+        
         bleKit.startCardBindingObserver.subscribe(onNext: { (result) in
             self.startCardBindingSubject.onNext(result)
         }, onError: { (error) in
@@ -90,8 +90,8 @@ class DashboardViewModel {
         }).disposed(by: disposeBag)
         bleKit.cardBindingObserver.subscribe(onNext: { (result) in
             switch result {
-            case .success(let card):
-                self.add(card: card)
+            case .success(let monitor):
+                self.add(monitor)
             case .error(let error):
                 self.dataUpdatedPublisher.onNext(Result.error(error))
             }
@@ -118,9 +118,9 @@ class DashboardViewModel {
         
         bleKit.reConnectionOutput.subscribe(onNext: { (result) in
             switch result {
-            case .success(let card):
-                self.add(card: card)
-                self.reconnectionPublisher.onNext(Result.success(card))
+            case .success(let monitor):
+                self.add(monitor)
+                self.reconnectionPublisher.onNext(Result.success(monitor))
             case .error(let error):
                 self.reconnectionPublisher.onNext(Result.error(error))
             }
@@ -136,55 +136,24 @@ class DashboardViewModel {
         
     }
 
-    private func add(card: CardModel, saveToRealm: Bool = true) {
+    private func add(_ monitor: Monitor, saveToRealm: Bool = true) {
         dataUpdatedPublisher.onNext(Result.success(ds))
         if !ds.contains(where: {
-            $0.uuid == card.uuid
+            $0.realmCard.uuid == monitor.realmCard.uuid
         }) {
-            ds.append(card)
+            ds.append(monitor)
         } else {
             if let index = ds.index(where: {
-                $0.uuid == card.uuid
+                $0.realmCard.uuid == monitor.realmCard.uuid
             }) {
-                ds[index] = card
+                ds[index] = monitor
             }
         }
         if saveToRealm {
-            addToRealm(card: card)
+            RealmManager.shared.addOrUpdate(monitor: monitor)
         }
     }
-    private func addToRealm(card: CardModel) {
-        let model: RealmCardPripheral
-        if let anItem = realm.object(ofType: RealmCardPripheral.self, forPrimaryKey: card.uuid) {
-            model = anItem
-        } else {
-            model = RealmCardPripheral()
-        }
 
-        try! realm.write {
-            model.cardName = card.name
-            if model.uuid == "" { // since this is the primary key we need to make sure that it is the first and only time that we set it
-                model.uuid = card.uuid
-            }
-            model.MACAddress = card.MACAddress
-            model.batteryLevel = card.batteryLevel
-            model.firmwareRevisionString = card.firmwareRevisionString
-            model.connectionParameters = card.connectionParameters
-            model.fsmParameters = card.fsmParameters
-            realm.add(model, update: true)
-        }
-    }
-    private func deleteFromRealm(card: CardModel) {
-        if let objectToDelete = realm.object(ofType: RealmCardPripheral.self, forPrimaryKey: card.uuid) {
-            try! realm.write {
-                realm.delete(objectToDelete)
-            }
-        }
-        
-    }
-    func getPeripheralsIfAny() {
-        fetchedPeripherals = realm.objects(RealmCardPripheral.self)
-    }
     func startScanning() {
         bleKit.stopScanning()
         bleKit.startScanning()
@@ -192,11 +161,11 @@ class DashboardViewModel {
     func stopScanning() {
         bleKit.stopScanning()
     }
-    func getLatestAddedCard() -> CardModel? {
+    func getLatestAddedCard() -> Monitor? {
         return ds.last
     }
-    func reconnect() {
-        guard let peripherals = fetchedPeripherals else {
+    private func reconnect() {
+        guard let peripherals = RealmManager.shared.fetchAllMonitors() else {
             reconnectionPublisher.onNext(Result.error(BluetoothServicesError.peripheralNil))
             return
         }
@@ -221,20 +190,20 @@ class DashboardViewModel {
         if indexPath.row > self.ds.count {
             return
         }
-        self.deleteFromRealm(card: ds[indexPath.row])
+        RealmManager.shared.deleteFromRealm(monitor: ds[indexPath.row])
         bleKit.decommission(for: self.ds[indexPath.row])
         ds.remove(at: indexPath.row)
     }
     func numberOfItems() -> Int {
         return ds.count
     }
-    func item(at indexPath: IndexPath) -> CardModel? {
+    func item(at indexPath: IndexPath) -> Monitor? {
         if indexPath.row < ds.count {
             return ds[indexPath.row]
         }
         return nil 
     }
-    func realmObject(for card: CardModel) -> RealmCardPripheral? {
-        return realm.object(ofType: RealmCardPripheral.self, forPrimaryKey: card.uuid)
-    }
+//    func realmObject(for monitor: Monitor) -> RealmCardPripheral? {
+//        return RealmManager.shared.getRealmObject(for: card)
+//    }
 }

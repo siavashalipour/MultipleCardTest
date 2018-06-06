@@ -13,6 +13,7 @@
 		7C27BD8920ABCE310082288C /* MFCardServices.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8820ABCE310082288C /* MFCardServices.swift */; };
 		7C27BD8B20ABE0AF0082288C /* PeripheralInfoViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */; };
 		7C27BD8D20ABE2260082288C /* PeripheralInfoCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */; };
+		7C40235920C0C77000DD4339 /* RealmManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7C40235820C0C77000DD4339 /* RealmManager.swift */; };
 		7CA6F82620A8FFEA0049F987 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */; };
 		7CA6F82820A8FFEA0049F987 /* ViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7CA6F82720A8FFEA0049F987 /* ViewController.swift */; };
 		7CA6F82B20A8FFEA0049F987 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7CA6F82920A8FFEA0049F987 /* Main.storyboard */; };
@@ -44,6 +45,7 @@
 		7C27BD8820ABCE310082288C /* MFCardServices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MFCardServices.swift; sourceTree = "<group>"; };
 		7C27BD8A20ABE0AF0082288C /* PeripheralInfoViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoViewController.swift; sourceTree = "<group>"; };
 		7C27BD8C20ABE2260082288C /* PeripheralInfoCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PeripheralInfoCell.swift; sourceTree = "<group>"; };
+		7C40235820C0C77000DD4339 /* RealmManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RealmManager.swift; sourceTree = "<group>"; };
 		7CA6F82220A8FFEA0049F987 /* MultipleCardTest.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = MultipleCardTest.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7CA6F82520A8FFEA0049F987 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		7CA6F82720A8FFEA0049F987 /* ViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewController.swift; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				7CA6F84620A91F010049F987 /* CardModel.swift */,
+				7C40235820C0C77000DD4339 /* RealmManager.swift */,
 			);
 			path = Model;
 			sourceTree = "<group>";
@@ -360,6 +363,7 @@
 				7CB8D7FF20BE6CF200F0E3B8 /* MFFirmwareUpdateManager.swift in Sources */,
 				7CB8D7F320BE4FAA00F0E3B8 /* MFCardParameters.swift in Sources */,
 				7CA6F84720A91F010049F987 /* CardModel.swift in Sources */,
+				7C40235920C0C77000DD4339 /* RealmManager.swift in Sources */,
 				7CA6F84B20A923950049F987 /* CardCell.swift in Sources */,
 				7C1ADBCD20AE8E580008C6D0 /* PeripheralInfoViewModel.swift in Sources */,
 				7CB8D7F620BE6BD600F0E3B8 /* String+Subscript.swift in Sources */,
