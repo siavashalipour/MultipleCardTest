@@ -9,11 +9,11 @@
 import Foundation
 
 enum Result<T, E> {
-    case success(T)
-    case error(E)
+  case success(T)
+  case error(E)
 }
 
 enum BluetoothServicesError: Error {
-    case peripheralNil
-    case commissioningError
+  case peripheralNil
+  case commissioningError
 }

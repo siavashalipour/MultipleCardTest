@@ -129,6 +129,4 @@ extension PeripheralInfoViewController: UITableViewDataSource, UITableViewDelega
         }
         return cell
     }
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-    }
 }

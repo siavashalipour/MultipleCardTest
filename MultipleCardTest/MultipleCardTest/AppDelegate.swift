@@ -26,10 +26,6 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         console.format = "$DHH:mm:ss$d $L $M"
         // add the destinations to SwiftyBeaver
         log.addDestination(console)
-        
-        // start checking version
-        let updateManager = MFFirmwareUpdateManager.shared
-        updateManager.startChecking()
         return true
     }
 

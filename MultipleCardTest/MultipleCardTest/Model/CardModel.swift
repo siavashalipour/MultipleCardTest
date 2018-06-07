@@ -11,32 +11,6 @@ import RealmSwift
 import RxBluetoothKit
 import Realm
 
-//struct CardModel {    
-//    var name: String
-//    var uuid: String
-//    var isConnected: Bool
-//    var MACAddress: String
-//    var firmwareRevisionString: String
-//    var batteryLevel: String
-//    var connectionParameters: String
-//    var fsmParameters: String
-//    var peripheral: Peripheral?
-//}
-//extension CardModel {
-//    
-//    init(with peripheral: Peripheral) {
-//        self.name = peripheral.name ?? ""
-//        self.uuid = peripheral.identifier.uuidString
-//        self.isConnected = false
-//        self.MACAddress = ""
-//        self.firmwareRevisionString = ""
-//        self.batteryLevel = ""
-//        self.connectionParameters = ""
-//        self.fsmParameters = ""
-//        self.peripheral = peripheral
-//    }
-//}
-
 typealias Monitor = (realmCard: RealmCardPripheral, peripheral: Peripheral)
 
 class RealmCardPripheral: Object {
