@@ -13,5 +13,7 @@ target 'MultipleCardTest' do
     pod 'RealmSwift', '3.6.0'
     pod 'SwiftyBeaver', '1.6.0'
     pod 'Alamofire', '4.7.2'
+    pod 'Fabric'
+    pod 'Crashlytics'
 end
 

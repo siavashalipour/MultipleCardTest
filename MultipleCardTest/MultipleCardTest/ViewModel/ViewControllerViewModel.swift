@@ -95,8 +95,10 @@ class DashboardViewModel {
       case .success(let monitor):
         self?.add(monitor)
         self?.bleKit.observeDisconnect(for: monitor.peripheral)
+        self?.startCardBindingSubject.onCompleted()
       case .error(let error):
         self?.dataUpdatedPublisher.onNext(Result.error(error))
+        self?.startCardBindingSubject.onCompleted()
       }
     }, onError: { [weak self] (error) in
       self?.dataUpdatedPublisher.onNext(Result.error(error))

@@ -226,6 +226,8 @@
 				7CA6F81F20A8FFEA0049F987 /* Frameworks */,
 				7CA6F82020A8FFEA0049F987 /* Resources */,
 				8B8B76F8FD3E739C6E4BD087 /* [CP] Embed Pods Frameworks */,
+				7C3A24B520C8E3D10066DD28 /* ShellScript */,
+				25CBE2AE1BF91110C9ED70D9 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -289,6 +291,34 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		25CBE2AE1BF91110C9ED70D9 /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-MultipleCardTest/Pods-MultipleCardTest-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		7C3A24B520C8E3D10066DD28 /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Fabric/run\" b6bff7f9d892076fe30d9fc608e2c42dc9376453 a04a63ce0bf7d1ee9858277a29bfea6cd6ca7440dcb00031c456a1d49c791341";
+		};
 		8B8B76F8FD3E739C6E4BD087 /* [CP] Embed Pods Frameworks */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -518,10 +548,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 33GWFDB497;
 				INFOPLIST_FILE = MultipleCardTest/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = Maxwellforest.MultipleCardTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "MultipleCardTest/Misc/MultipleCardTest-Bridging-Header.h";
@@ -540,10 +567,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = 33GWFDB497;
 				INFOPLIST_FILE = MultipleCardTest/Info.plist;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
 				PRODUCT_BUNDLE_IDENTIFIER = Maxwellforest.MultipleCardTest;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "MultipleCardTest/Misc/MultipleCardTest-Bridging-Header.h";

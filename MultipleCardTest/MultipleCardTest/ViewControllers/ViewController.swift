@@ -155,6 +155,8 @@ class ViewController: UIViewController {
       self.scanningHelperView.updateSubtitle(to: "Started card binding flow")
     }, onError: { (error) in
       self.stopLoading()
+    }, onCompleted: {
+      self.stopLoading()
     }).disposed(by: disposeBag)
     
     vm.reconnectionObserver.subscribe(onNext: { (result) in
