@@ -59,7 +59,7 @@ class PeripheralInfoViewModel {
     item = PeripheralInfoCellData.init(title: "Connection", subtitle: realmPeripheral.connectionParameters)
     ds.append(item)
     self.peripheral = monitor.peripheral
-    
+
   }
   func bind(updateBtn: Observable<Void>) {
     let battery = Int(selectedRealmPeripheral.batteryLevel) ?? 0
@@ -82,6 +82,10 @@ class PeripheralInfoViewModel {
     }, onError: { (error) in
       
     }).disposed(by: bag)
+
+  }
+  func title() -> String {
+    return selectedRealmPeripheral.uuid
   }
   func numberOfItems() -> Int {
     return ds.count

@@ -525,7 +525,6 @@ extension MFRxBluetoothKitService {
   }
   
   func reconnectOrTurnOnMonitor(_ monitor: Monitor) -> Observable<Result<Monitor, Error>> {
-    
     return Observable.create { (observer) -> Disposable in
       self.readBattery(for: monitor)
       self.setBatteryNotificationOn(for: monitor)

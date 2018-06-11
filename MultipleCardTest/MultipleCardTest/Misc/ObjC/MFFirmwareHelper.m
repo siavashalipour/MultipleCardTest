@@ -143,7 +143,6 @@ static UInt16 const kChunkSize  = 20;
 
 - (NSData *)rebootCommandData {
   
-  //    [_delegate updateStateToMFS_OTA_State_PatchCompleted];
   int suotaEnd = 0xFD000000;
   NSLog(@"Send SUOTA REBOOT command: %#010x", suotaEnd);
   NSData *suotaEndData = [NSData dataWithBytes:&suotaEnd length:sizeof(suotaEnd)];

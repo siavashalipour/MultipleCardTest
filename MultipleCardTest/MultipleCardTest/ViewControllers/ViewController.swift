@@ -69,6 +69,7 @@ class ViewController: UIViewController {
     spinner.hidesWhenStopped = true
     return spinner
   }()
+  
   override func viewDidLoad() {
     super.viewDidLoad()
     setupUI()
@@ -125,133 +126,134 @@ class ViewController: UIViewController {
     
   }
   private func startObservingViewModel() {
-    vm.scanningError.subscribe { (event) in
+    vm.scanningError.subscribe { [weak self] (event) in
       if let result = event.element {
         switch result {
         case .success(_):
+          self?.stopLoading()
           break
         case .error(let error):
-          self.scanningHelperView.updateSubtitle(to: "\(error)")
-          DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: {
-            self.stopLoading()
+          self?.scanningHelperView.updateSubtitle(to: "\(error)")
+          DispatchQueue.main.asyncAfter(deadline: .now() + 1, execute: { // jsut to have the error on screen for 1 sec
+            self?.stopLoading()
           })
         }
       }
       }.disposed(by: disposeBag)
     
-    vm.dataUpdatedObserver.subscribe(onNext: { (result) in
+    vm.dataUpdatedObserver.subscribe(onNext: { [weak self] (result) in
       switch result {
       case .success(_):
-        self.reloadTableViewOnMainThread()
+        self?.reloadTableViewOnMainThread()
       case .error(_):
-        self.stopLoading()
+        self?.stopLoading()
       }
-    }, onError: { (error) in
-      self.stopLoading()
+    }, onError: { [weak self] (error) in
+      self?.stopLoading()
     }).disposed(by: disposeBag)
     
-    vm.startCardBindingObserver.subscribe(onNext: { (result) in
-      self.scanningHelperView.isHidden = false
-      self.scanningHelperView.updateSubtitle(to: "Started card binding flow")
-    }, onError: { (error) in
-      self.stopLoading()
-    }, onCompleted: {
-      self.stopLoading()
+    vm.startCardBindingObserver.subscribe(onNext: { [weak self] (result) in
+      self?.scanningHelperView.isHidden = false
+      self?.scanningHelperView.updateSubtitle(to: "Started card binding flow")
+    }, onError: { [weak self] (error) in
+      self?.stopLoading()
+    }, onCompleted: { [weak self] in
+      self?.stopLoading()
     }).disposed(by: disposeBag)
     
-    vm.reconnectionObserver.subscribe(onNext: { (result) in
+    vm.reconnectionObserver.subscribe(onNext: { [weak self] (result) in
       switch result {
       case .success(_):
-        self.reloadTableViewOnMainThread()
+        self?.reloadTableViewOnMainThread()
       case .error(_):
-        self.stopLoading()
+        self?.stopLoading()
       }
-    }, onError: { (error) in
-      self.stopLoading()
+    }, onError: { [weak self] (error) in
+      self?.stopLoading()
     }).disposed(by: disposeBag)
     
-    vm.reConnectingInProgressObserver.subscribe(onNext: { (result) in
+    vm.reConnectingInProgressObserver.subscribe(onNext: { [weak self] (result) in
       switch result {
       case .success(let inProgress):
         if inProgress {
-          self.spinner.stopAnimating()
-          self.scanningHelperView.isHidden = false
-          self.scanningHelperView.updateSubtitle(to: "Re-Connecting...")
+          self?.spinner.stopAnimating()
+          self?.scanningHelperView.isHidden = false
+          self?.scanningHelperView.updateSubtitle(to: "Re-Connecting...")
         }
 
       case .error(_):
-        self.stopLoading()
+        self?.stopLoading()
       }
-    }, onError: { (error) in
-      self.stopLoading()
-    }, onCompleted: {
-      self.stopLoading()
+    }, onError: { [weak self] (error) in
+      self?.stopLoading()
+    }, onCompleted: { [weak self] in
+      self?.stopLoading()
     }).disposed(by: disposeBag)
     
-    vm.disconnectObserver.subscribe(onNext: { (result) in
+    vm.disconnectObserver.subscribe(onNext: { [weak self] (result) in
       switch result {
       case .success(_):
-        self.reloadTableViewOnMainThread()
+        self?.reloadTableViewOnMainThread()
       case .error(_):
-        self.stopLoading()
+        self?.stopLoading()
       }
-    }, onError: { (error) in
-      self.stopLoading()
+    }, onError: { [weak self] (error) in
+      self?.stopLoading()
     }).disposed(by: disposeBag)
     
-    vm.readingCardObserver.subscribe(onNext: { (result) in
+    vm.readingCardObserver.subscribe(onNext: { [weak self] (result) in
       switch result {
       case .success(let isReading): // TODO: consider using onCompleted and remove `isReading`
         DispatchQueue.main.async {
-          self.scanningHelperView.isHidden = !isReading
-          self.isReadingInfo = isReading
+          self?.scanningHelperView.isHidden = !isReading
+          self?.isReadingInfo = isReading
           if isReading {
-            self.scanningHelperView.updateSubtitle(to: "reading card data...")
+            self?.scanningHelperView.updateSubtitle(to: "reading card data...")
           }
         }
       case .error(_):
-        self.stopLoading()
+        self?.stopLoading()
         break
       }
-    }, onError: { (_) in
-      self.stopLoading()
+    }, onError: { [weak self] (_) in
+      self?.stopLoading()
     }).disposed(by: disposeBag)
     
-    vm.unlinkCardObserver.subscribe(onNext: { (result) in
+    vm.unlinkCardObserver.subscribe(onNext: { [weak self] (result) in
       switch result {
       case .success(let success):
         if success {
           DispatchQueue.main.async {
-            self.scanningHelperView.isHidden = true
+            self?.scanningHelperView.isHidden = true
           }
         }
       case .error(_):
         DispatchQueue.main.async {
-          self.scanningHelperView.isHidden = true
+          self?.scanningHelperView.isHidden = true
         }
       }
-    }, onError: { (error) in
+    }, onError: { [weak self] (error) in
       DispatchQueue.main.async {
-        self.scanningHelperView.isHidden = true
+        self?.scanningHelperView.isHidden = true
       }
     }).disposed(by: disposeBag)
     
-    vm.turnOffCardObserver.subscribe(onNext: { (result) in
+    vm.turnOffCardObserver.subscribe(onNext: { [weak self] (result) in
       switch result {
       case .success(let success):
         if success {
           DispatchQueue.main.async {
-            self.scanningHelperView.isHidden = true
+            self?.scanningHelperView.isHidden = true
           }
         }
       case .error(_):
         DispatchQueue.main.async {
-          self.scanningHelperView.isHidden = true
+          self?.scanningHelperView.isHidden = true
         }
       }
-    }, onError: { (error) in
+    }, onError: { [weak self] (error) in
       DispatchQueue.main.async {
-        self.scanningHelperView.isHidden = true
+        self?.scanningHelperView.isHidden = true
       }
     }).disposed(by: disposeBag)
   }
