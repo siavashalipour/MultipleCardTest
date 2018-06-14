@@ -36,7 +36,33 @@ struct MFSFSMParameters {
   let fsmAdvertisingIntervalLong: UInt16
   let ledBrightness: UInt8
 }
-
+extension MFSFSMParameters: Equatable {
+  static func ==(lhs: MFSFSMParameters, rhs: MFSFSMParameters) -> Bool {
+    return (lhs.commissioned == rhs.commissioned &&
+            lhs.fsmBehaviour == rhs.fsmBehaviour &&
+            lhs.fsmConnectedTime == rhs.fsmConnectedTime &&
+            lhs.fsmAdvertiseTimeShort == rhs.fsmAdvertiseTimeShort &&
+            lhs.fsmAdvertiseTimeLong == rhs.fsmAdvertiseTimeLong &&
+            lhs.fsmInactiveTime == rhs.fsmInactiveTime &&
+            lhs.fsmAdvertisingIntervalShort == rhs.fsmAdvertisingIntervalShort &&
+            lhs.fsmAdvertisingIntervalLong == rhs.fsmAdvertisingIntervalLong &&
+            lhs.ledBrightness == rhs.ledBrightness
+            )
+  }
+}
+extension MFSFSMParameters {
+  init() {
+    self.commissioned = 0
+    self.fsmBehaviour = 0
+    self.fsmConnectedTime = 0
+    self.fsmAdvertiseTimeShort = 0
+    self.fsmAdvertiseTimeLong = 0
+    self.fsmInactiveTime = 0
+    self.fsmAdvertisingIntervalShort = 0
+    self.fsmAdvertisingIntervalLong = 0
+    self.ledBrightness = 0
+  }
+}
 
 struct MFSMACAddress {
   let address: UInt8

@@ -545,15 +545,18 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = N22FPH76FU;
 				INFOPLIST_FILE = MultipleCardTest/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = Maxwellforest.MultipleCardTest;
+				PRODUCT_BUNDLE_IDENTIFIER = com.maxwellforest.multiple.card.test;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "b5b39b8d-810b-4257-b718-d8374fb0297e";
+				PROVISIONING_PROFILE_SPECIFIER = MultiCardTest_Dev;
 				SWIFT_OBJC_BRIDGING_HEADER = "MultipleCardTest/Misc/MultipleCardTest-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 4.0;
@@ -567,15 +570,18 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CLANG_ENABLE_MODULES = YES;
-				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Manual;
 				DEVELOPMENT_TEAM = N22FPH76FU;
 				INFOPLIST_FILE = MultipleCardTest/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				PRODUCT_BUNDLE_IDENTIFIER = Maxwellforest.MultipleCardTest;
+				PRODUCT_BUNDLE_IDENTIFIER = com.maxwellforest.multiple.card.test;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE = "b5b39b8d-810b-4257-b718-d8374fb0297e";
+				PROVISIONING_PROFILE_SPECIFIER = MultiCardTest_Dev;
 				SWIFT_OBJC_BRIDGING_HEADER = "MultipleCardTest/Misc/MultipleCardTest-Bridging-Header.h";
 				SWIFT_VERSION = 4.0;
 				TARGETED_DEVICE_FAMILY = "1,2";

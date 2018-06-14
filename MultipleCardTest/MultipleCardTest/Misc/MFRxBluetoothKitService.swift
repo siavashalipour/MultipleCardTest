@@ -229,6 +229,45 @@ final class MFRxBluetoothKitService {
 }
 // MARK:- Readings
 extension MFRxBluetoothKitService {
+  
+  private func readDiagnosticFSMMatches(for monitor: Monitor) -> Observable<Result<Bool,Error>> {
+    return Observable.create({ [weak self] (observer) -> Disposable in
+      let peripheral = monitor.peripheral
+      let isConnected = peripheral.isConnected
+      
+      let connectedObservableCreator = { return peripheral.readValue(for: DeviceCharacteristic.fsmParameters).asObservable() }
+      let connectObservableCreator = {
+        return peripheral.establishConnection()
+          .do(onNext: { [weak self] _ in
+            self?.observeDisconnect(for: peripheral)
+          })
+          .flatMap { $0.readValue(for: DeviceCharacteristic.fsmParameters) }
+      }
+      let observable = isConnected ? connectedObservableCreator(): connectObservableCreator()
+      let disposable = observable.timeout(self!.kReadingTimeout, scheduler: MainScheduler.asyncInstance)
+        .subscribe(onNext: { char in
+          if let value = char.value {
+            let nsData = NSData.init(data: value)
+            var fsmParams: MFSFSMParameters = MFSFSMParameters()
+            nsData.getBytes(&fsmParams, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters))
+            observer.onNext(Result.success(fsmParams == CardParameters.kDefaultFSMParameters))
+          }
+          AppDelegate.shared.log.debug("Diagnostic read \(char.characteristic.value?.hexadecimalString ?? "")")
+          }, onError: { error in
+            AppDelegate.shared.log.error("Diagnostic read \(error)")
+            observer.onNext(Result.error(error))
+        })
+      
+      if isConnected {
+        self?.disposeBag.insert(disposable)
+        self?.peripheralConnections[peripheral] = disposable
+      }
+      
+      return Disposables.create()
+    })
+    
+  }
+  
   private func readMACAddress(for monitor: Monitor) {
     let peripheral = monitor.peripheral
     let isConnected = peripheral.isConnected
@@ -474,69 +513,109 @@ extension MFRxBluetoothKitService {
   private func startCardBinding(for monitor: Monitor) {
     readBattery(for: monitor)
     readFirmwareVersion(for: monitor)
-    setBatteryNotificationOn(for: monitor)
     startCardBindingSubject.onNext(Result.success(true))
     //Write the Connection parameters
     let defaultWriteObserver = writeDefaultConnectionParameters(for: monitor)
-    let fsmObserver = writeFSMParameters(for: monitor)
-    
-    let zip = Observable.zip(batteryObserver, firmwareVersionObserver, defaultWriteObserver, fsmObserver) {
-      return (batteryLevel: $0, firmware: $1, defaultWrite: $2, fsm: $3)
+    let monitorCopy = monitor
+
+    let zip = Observable.zip(batteryObserver, firmwareVersionObserver) {
+      return (batteryLevel: $0, firmware: $1)
     }
     
-    let monitorCopy = monitor
-    zip.subscribe(onNext: { [weak self] (batteryLevel, firmware, defaultWrite, fsm) in
-      RealmManager.shared.beginWrite()
+    zip.subscribe(onNext: {  (batteryLevel, firmware) in
       switch batteryLevel {
       case .success(let battery):
+        RealmManager.shared.beginWrite()
         monitorCopy.realmCard.batteryLevel = battery
       case .error(let error):
-        self?.cardBindingSubject.onNext(Result.error(error))
-        break
-      }
-      switch fsm {
-      case .success(let fsm):
-        monitorCopy.realmCard.fsmParameters = fsm
-      case .error(let error):
-        self?.cardBindingSubject.onNext(Result.error(error))
-        break
-      }
-      switch defaultWrite {
-      case .success(let connection):
-        monitorCopy.realmCard.connectionParameters = connection
-      case .error(let error):
-        self?.cardBindingSubject.onNext(Result.error(error))
+        self.cardBindingSubject.onNext(Result.error(error))
         break
       }
       switch firmware {
       case .success(let firmware):
         monitorCopy.realmCard.firmwareRevisionString = firmware
       case .error(let error):
-        self?.cardBindingSubject.onNext(Result.error(error))
+        self.cardBindingSubject.onNext(Result.error(error))
         break
       }
+      defaultWriteObserver.subscribe(onNext: { (result) in
+        switch result {
+        case .success(let connection):
+          monitorCopy.realmCard.connectionParameters = connection
+          let fsmObserver = self.writeFSMParameters(for: monitor)
+          fsmObserver.subscribe(onNext: { (result) in
+            switch result {
+            case .success(let fsm):
+              monitorCopy.realmCard.fsmParameters = fsm
+            case .error(let error):
+              self.cardBindingSubject.onNext(Result.error(error))
+            }
+          }, onError: { (error) in
+            
+          }).disposed(by: self.disposeBag)
+        case .error(let error):
+          self.cardBindingSubject.onNext(Result.error(error))
+          break
+        }
+      }, onError: { [weak self] (error) in
+        self?.cardBindingSubject.onNext(Result.error(error))
+      }).disposed(by: self.disposeBag)
       RealmManager.shared.commitWrite()
       MFFirmwareUpdateManager.shared.startChecking(for: monitorCopy)
-      self?.cardBindingSubject.onNext(Result.success(monitorCopy))
-    }, onError: { [weak self] (error) in
-      self?.cardBindingSubject.onNext(Result.error(error))
-    }).disposed(by: disposeBag)
-    
+      self.cardBindingSubject.onNext(Result.success(monitorCopy))
+      }, onError: { [weak self] (error) in
+        self?.cardBindingSubject.onNext(Result.error(error))
+    }).disposed(by: self.disposeBag)
   }
   
   func reconnectOrTurnOnMonitor(_ monitor: Monitor) -> Observable<Result<Monitor, Error>> {
     return Observable.create { (observer) -> Disposable in
       self.readBattery(for: monitor)
-      self.setBatteryNotificationOn(for: monitor)
-      let zip = Observable.zip(self.batteryObserver, self.setBatteryNotificationObserver) {
-        return (batteryLevel: $0, batteryNotification: $1)
+      self.readFirmwareVersion(for: monitor)
+      // read diagnostic FSM
+      self.readDiagnosticFSMMatches(for: monitor).subscribe(onNext: { (result) in
+        switch result {
+        case .success(let isMatch):
+          if !isMatch {
+            AppDelegate.shared.log.debug("Diagnostic read doesn't match => writing fsm again")
+            self.writeFSMParameters(for: monitor).subscribe().disposed(by: self.disposeBag)
+          } else {
+            AppDelegate.shared.log.debug("Diagnostic matches => continue reconnecting")
+          }
+        case .error(let error):
+          AppDelegate.shared.log.error("Recconnect Read Diagnostic \(error)")
+          AppDelegate.shared.log.error("Diagnostic read error => writing fsm again")
+          self.writeFSMParameters(for: monitor).subscribe().disposed(by: self.disposeBag)
+        }
+      }, onError: { (error) in
+        AppDelegate.shared.log.error("Recconnect Read Diagnostic \(error)")
+        observer.onNext(Result.error(error))
+      }).disposed(by: self.disposeBag)
+      // write connection params
+      let defaultWriteObserver = self.writeDefaultConnectionParameters(for: monitor)
+      let zip = Observable.zip(self.batteryObserver, self.firmwareVersionObserver, defaultWriteObserver) {
+        return (batteryLevel: $0, firmware: $1, connection: $2)
       }
       let monitorCopy = monitor
-      zip.subscribe(onNext: { (batteryLevel, batteryNotification) in
+      zip.subscribe(onNext: { (batteryLevel, firmware, connection) in
         RealmManager.shared.beginWrite()
         switch batteryLevel {
         case .success(let battery):
           monitorCopy.realmCard.batteryLevel = battery
+        case .error(let error):
+          observer.onNext(Result.error(error))
+          break
+        }
+        switch firmware {
+        case .success(let firmware):
+          monitorCopy.realmCard.firmwareRevisionString = firmware
+        case .error(let error):
+          observer.onNext(Result.error(error))
+          break
+        }
+        switch connection {
+        case .success(let connection):
+          monitorCopy.realmCard.connectionParameters = connection
         case .error(let error):
           observer.onNext(Result.error(error))
           break
