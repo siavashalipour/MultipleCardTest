@@ -112,7 +112,7 @@ final class MFRxBluetoothKitService {
       .filter {
         $0 == .poweredOn
       }
-      .timeout(60, scheduler: MainScheduler.instance)
+      .timeout(120, scheduler: MainScheduler.instance)
       .subscribeOn(MainScheduler.instance)
       .flatMap { [weak self] _ -> Observable<ScannedPeripheral> in
         guard let `self` = self else {
@@ -122,7 +122,7 @@ final class MFRxBluetoothKitService {
       }
       .subscribe(onNext: { [weak self] scannedPeripheral in
         let canConnect = scannedPeripheral.advertisementData.advertisementData["kCBAdvDataLocalName"] as? String == "safedome" && scannedPeripheral.rssi.doubleValue > (self?.kRSSIThreshold)!
-        AppDelegate.shared.log.debug("Scanned and find \(scannedPeripheral.peripheral.name ?? "")")
+        AppDelegate.shared.log.debug("Scanned and find \(scannedPeripheral.peripheral.name ?? "") - \(scannedPeripheral.rssi.doubleValue)")
         if canConnect {
           scannedPeripheral.peripheral.establishConnection()
             .subscribe(onNext: { (_) in
@@ -527,6 +527,7 @@ extension MFRxBluetoothKitService {
       case .success(let battery):
         RealmManager.shared.beginWrite()
         monitorCopy.realmCard.batteryLevel = battery
+        AppDelegate.shared.log.debug("Card binding battery read")
       case .error(let error):
         self.cardBindingSubject.onNext(Result.error(error))
         break
@@ -534,6 +535,7 @@ extension MFRxBluetoothKitService {
       switch firmware {
       case .success(let firmware):
         monitorCopy.realmCard.firmwareRevisionString = firmware
+        AppDelegate.shared.log.debug("Card binding firmware read")
       case .error(let error):
         self.cardBindingSubject.onNext(Result.error(error))
         break
@@ -541,17 +543,23 @@ extension MFRxBluetoothKitService {
       defaultWriteObserver.subscribe(onNext: { (result) in
         switch result {
         case .success(let connection):
+          AppDelegate.shared.log.debug("Card binding connection wirte")
           monitorCopy.realmCard.connectionParameters = connection
           let fsmObserver = self.writeFSMParameters(for: monitor)
           fsmObserver.subscribe(onNext: { (result) in
             switch result {
             case .success(let fsm):
+              AppDelegate.shared.log.debug("Card binding fsm write")
               monitorCopy.realmCard.fsmParameters = fsm
+              RealmManager.shared.commitWrite()
+              MFFirmwareUpdateManager.shared.startChecking(for: monitorCopy)
+              AppDelegate.shared.log.debug("Card binding Done!")
+              self.cardBindingSubject.onNext(Result.success(monitorCopy))
             case .error(let error):
               self.cardBindingSubject.onNext(Result.error(error))
             }
           }, onError: { (error) in
-            
+            self.cardBindingSubject.onNext(Result.error(error))
           }).disposed(by: self.disposeBag)
         case .error(let error):
           self.cardBindingSubject.onNext(Result.error(error))
@@ -560,9 +568,6 @@ extension MFRxBluetoothKitService {
       }, onError: { [weak self] (error) in
         self?.cardBindingSubject.onNext(Result.error(error))
       }).disposed(by: self.disposeBag)
-      RealmManager.shared.commitWrite()
-      MFFirmwareUpdateManager.shared.startChecking(for: monitorCopy)
-      self.cardBindingSubject.onNext(Result.success(monitorCopy))
       }, onError: { [weak self] (error) in
         self?.cardBindingSubject.onNext(Result.error(error))
     }).disposed(by: self.disposeBag)
