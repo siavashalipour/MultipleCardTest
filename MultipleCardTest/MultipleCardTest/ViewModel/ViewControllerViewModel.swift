@@ -162,7 +162,7 @@ class DashboardViewModel {
     return ds.last
   }
   
-  func disconnect(at indexPath: IndexPath) {
+  func unlink(at indexPath: IndexPath) {
     if indexPath.row > ds.count {
       AppDelegate.shared.log.error("Index out of bound")
       return
@@ -177,11 +177,33 @@ class DashboardViewModel {
       AppDelegate.shared.log.error("Index out of bound")
       return
     }
-    RealmManager.shared.deleteFromRealm(monitor: ds[indexPath.row])
+    let peripheral = ds[indexPath.row].peripheral
+    let item = RealmManager.shared.getRealmObject(for: peripheral)
+    RealmManager.shared.beginWrite()
+    item?.isOn = false
+    if let index = ds.index(where: { (card, aPeripheral) -> Bool in
+      return aPeripheral.identifier.uuidString == peripheral.identifier.uuidString
+    }) {
+      let monitor = ds[index]
+      monitor.realmCard.isOn = false
+      ds[index] = monitor
+    }
+    RealmManager.shared.commitWrite()
     bleKit.trunOff(ds[indexPath.row])
-    ds.remove(at: indexPath.row)
   }
-  
+  func disconnect(_ peripheral: Peripheral) {
+    let item = RealmManager.shared.getRealmObject(for: peripheral)
+    RealmManager.shared.beginWrite()
+    item?.isConnected = false
+    if let index = ds.index(where: { (card, aPeripheral) -> Bool in
+      return aPeripheral.identifier.uuidString == peripheral.identifier.uuidString
+    }) {
+      let monitor = ds[index]
+      monitor.realmCard.isConnected = false
+      ds[index] = monitor
+    }
+    RealmManager.shared.commitWrite()
+  }
   func numberOfItems() -> Int {
     return ds.count
   }
@@ -237,7 +259,7 @@ class DashboardViewModel {
         uuids.append(aUUID)
       }
     }
-    bleKit.tryReconnect(to: uuids, realmPeripheral: peripherals)
+    bleKit.tryReconnect(to: uuids)
   }
-  
+
 }

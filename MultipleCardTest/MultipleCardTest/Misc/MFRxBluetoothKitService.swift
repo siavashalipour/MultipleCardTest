@@ -145,7 +145,7 @@ final class MFRxBluetoothKitService {
     return centralManager.observeState().startWith(centralManager.state)
   }
   
-  func tryReconnect(to peripherals: [UUID], realmPeripheral:  Results<RealmCardPripheral>) {
+  func tryReconnect(to peripherals: [UUID]) {
     let peripheralsToReConnect = centralManager.retrievePeripherals(withIdentifiers: peripherals)
     if peripheralsToReConnect.count < 1 {
       reConnectionSubject.onNext(Result.error(BluetoothServicesError.peripheralNil))
@@ -158,18 +158,52 @@ final class MFRxBluetoothKitService {
     guard let scanningDisposable = scanningDisposable else { return }
     scanningDisposable.dispose()
   }
-  
+  private func startScanningAndReconnect() {
+    guard let feched = RealmManager.shared.fetchAllMonitors() else {
+      return
+    }
+    if feched.count < 1 {
+      return
+    }
+    if let scanningDisposable = scanningDisposable {
+      scanningDisposable.dispose()
+    }
+    scanningDisposable = centralManager.observeState()
+      .startWith(centralManager.state)
+      .filter {
+        $0 == .poweredOn
+      }
+      .subscribeOn(MainScheduler.instance)
+      .flatMap { [weak self] _ -> Observable<ScannedPeripheral> in
+        guard let `self` = self else {
+          return Observable.empty()
+        }
+        return self.centralManager.scanForPeripherals(withServices: nil)
+      }
+      .subscribe(onNext: { [weak self] scannedPeripheral in
+        let canConnect = scannedPeripheral.advertisementData.advertisementData["kCBAdvDataLocalName"] as? String == "safedome" && scannedPeripheral.rssi.doubleValue > (self?.kRSSIThreshold)!
+        AppDelegate.shared.log.debug("Scanned and find \(scannedPeripheral.peripheral.name ?? "") - \(scannedPeripheral.rssi.doubleValue)")
+        if canConnect {
+          self?.tryReconnect(to: [scannedPeripheral.peripheral.identifier])
+          self?.foundSafedome = true
+        }
+        }, onError: { [weak self] error in
+          AppDelegate.shared.log.error("Scan failed \(error)")
+          self?.scanningSubject.onNext(Result.error(error))
+      })
+  }
   // Disposal of a given connection disposable disconnects automatically from a peripheral
   // So firstly, you discconect from a perpiheral and then you remove of disconnected Peripheral
   // from the Peripheral's collection.
   func disconnect(_ peripheral: Peripheral) {
     centralManager.centralManager.cancelPeripheralConnection(peripheral.peripheral)
+    self.startScanningAndReconnect()
+    self.disconnectionSubject.onNext(Result.success(peripheral))
     guard let disposable = peripheralConnections[peripheral] else {
       return
     }
     disposable.dispose()
     peripheralConnections[peripheral] = nil
-    self.disconnectionSubject.onNext(Result.success(peripheral))
   }
   
   func establishConnectionAndAddToConnectionDisposal(for peripheral: Peripheral) {
@@ -201,6 +235,10 @@ final class MFRxBluetoothKitService {
         AppDelegate.shared.log.debug("peripheral \(peripheral.identifier) status \(peripheral.isConnected)")
         if peripheral.isConnected {
           if let card = RealmManager.shared.getRealmObject(for: peripheral) {
+            RealmManager.shared.beginWrite()
+            card.isConnected = true
+            card.isOn = true
+            RealmManager.shared.commitWrite()
             MFFirmwareUpdateManager.shared.startChecking(for: (card, peripheral))
             self.reconnectOrTurnOnMonitor((card, peripheral)).subscribe(onNext: { (result) in
               self.reConnectionSubject.onNext(result)
@@ -222,6 +260,7 @@ final class MFRxBluetoothKitService {
   func observeDisconnect(for peripheral: Peripheral) {
     centralManager.observeDisconnect(for: peripheral).subscribe(onNext: { [unowned self] (peripheral, reason) in
       self.disconnect(peripheral)
+      AppDelegate.shared.log.debug("\(peripheral) got disconnected!!!")
       }, onError: { [unowned self] error in
         self.disconnectionSubject.onNext(Result.error(error))
     }).disposed(by: disposeBag)
@@ -515,7 +554,6 @@ extension MFRxBluetoothKitService {
     readFirmwareVersion(for: monitor)
     startCardBindingSubject.onNext(Result.success(true))
     //Write the Connection parameters
-    let defaultWriteObserver = writeDefaultConnectionParameters(for: monitor)
     let monitorCopy = monitor
 
     let zip = Observable.zip(batteryObserver, firmwareVersionObserver) {
@@ -540,17 +578,18 @@ extension MFRxBluetoothKitService {
         self.cardBindingSubject.onNext(Result.error(error))
         break
       }
-      defaultWriteObserver.subscribe(onNext: { (result) in
+      self.writeDefaultConnectionParameters(for: monitor).subscribe(onNext: { (result) in
         switch result {
         case .success(let connection):
           AppDelegate.shared.log.debug("Card binding connection wirte")
           monitorCopy.realmCard.connectionParameters = connection
-          let fsmObserver = self.writeFSMParameters(for: monitor)
-          fsmObserver.subscribe(onNext: { (result) in
+          self.writeFSMParameters(for: monitor)
+          .subscribe(onNext: { (result) in
             switch result {
             case .success(let fsm):
               AppDelegate.shared.log.debug("Card binding fsm write")
               monitorCopy.realmCard.fsmParameters = fsm
+              monitor.realmCard.isOn = true
               RealmManager.shared.commitWrite()
               MFFirmwareUpdateManager.shared.startChecking(for: monitorCopy)
               AppDelegate.shared.log.debug("Card binding Done!")
@@ -574,6 +613,7 @@ extension MFRxBluetoothKitService {
   }
   
   func reconnectOrTurnOnMonitor(_ monitor: Monitor) -> Observable<Result<Monitor, Error>> {
+    observeDisconnect(for: monitor.peripheral)
     return Observable.create { (observer) -> Disposable in
       self.readBattery(for: monitor)
       self.readFirmwareVersion(for: monitor)
@@ -669,6 +709,8 @@ extension MFRxBluetoothKitService {
     peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.cardOff, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { [weak self] (char) in
       AppDelegate.shared.log.debug("turn off card success: \(String(describing: char.characteristic.value?.hexadecimalString))")
       self?.turnOffCardSubject.onNext(Result.success(true))
+      self?.observeDisconnect(for: peripheral)
+      self?.startScanningAndReconnect()
     }) { [weak self] (error) in
       AppDelegate.shared.log.error("turn off card: \(error)")
       self?.turnOffCardSubject.onNext(Result.error(error))

@@ -76,5 +76,10 @@ final class CardCell: UITableViewCell {
   
   func config(with data: Monitor) {
     title.text = "\(data.realmCard.uuid)"
+    if data.realmCard.isOn {
+      contentView.backgroundColor = data.realmCard.isConnected ? .white : .gray
+    } else {
+        contentView.backgroundColor = .red
+    }
   }
 }

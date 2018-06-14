@@ -192,7 +192,8 @@ class ViewController: UIViewController {
     
     vm.disconnectObserver.subscribe(onNext: { [weak self] (result) in
       switch result {
-      case .success(_):
+      case .success(let peripheral):
+        self?.vm.disconnect(peripheral)
         self?.reloadTableViewOnMainThread()
       case .error(_):
         self?.stopLoading()
@@ -322,7 +323,7 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
   
   func tableView(_ tableView: UITableView, editActionsForRowAt indexPath: IndexPath) -> [UITableViewRowAction]? {
     let disconnect = UITableViewRowAction(style: .destructive, title: "Unlink") { (action, indexPath) in
-      self.vm.disconnect(at: indexPath)
+      self.vm.unlink(at: indexPath)
       self.scanningHelperView.isHidden = false
       self.scanningHelperView.updateSubtitle(to: "Unlinking...")
       tableView.reloadData()
