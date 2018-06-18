@@ -69,7 +69,15 @@ class ViewController: UIViewController {
     spinner.hidesWhenStopped = true
     return spinner
   }()
-  
+  private lazy var debugLabel: UILabel = {
+    let label = UILabel()
+    label.font = UIFont.systemFont(ofSize: 16, weight: .regular)
+    label.textColor = UIColor.gray
+    label.textAlignment = .left
+    label.numberOfLines = 0
+    return label
+    
+  }()
   override func viewDidLoad() {
     super.viewDidLoad()
     setupUI()
@@ -85,6 +93,8 @@ class ViewController: UIViewController {
     view.addSubview(tableView)
     view.addSubview(scanningHelperView)
     view.addSubview(spinner)
+    view.addSubview(debugLabel)
+    
     spinner.isHidden = false
     settingBtn.snp.makeConstraints { (make) in
       make.size.equalTo(28)
@@ -105,8 +115,13 @@ class ViewController: UIViewController {
       make.top.equalTo(subtitleLabel.snp.bottom).offset(14)
     }
     tableView.snp.makeConstraints { (make) in
-      make.left.right.bottom.equalToSuperview()
+      make.left.right.equalToSuperview()
       make.top.equalTo(sectionSeparator.snp.bottom).offset(1)
+      make.bottom.equalTo(debugLabel.snp.top)
+    }
+    debugLabel.snp.makeConstraints { (make) in
+      make.left.right.bottom.equalToSuperview()
+      make.height.equalTo(44)
     }
     scanningHelperView.snp.makeConstraints { (make) in
       make.center.equalToSuperview()
@@ -165,7 +180,12 @@ class ViewController: UIViewController {
       switch result {
       case .success(_):
         self?.reloadTableViewOnMainThread()
-      case .error(_):
+      case .error(let error):
+        let alert = UIAlertController.init(title: "Error", message: "\(error.localizedDescription)", preferredStyle: UIAlertControllerStyle.alert)
+        self?.present(alert, animated: true, completion: nil)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2, execute: {
+          alert.dismiss(animated: true, completion: nil)
+        })
         self?.stopLoading()
       }
     }, onError: { [weak self] (error) in
@@ -257,6 +277,18 @@ class ViewController: UIViewController {
         self?.scanningHelperView.isHidden = true
       }
     }).disposed(by: disposeBag)
+    
+    vm.debugObserver.subscribe(onNext: { (result) in
+      switch result {
+      case .success(let str):
+        DispatchQueue.main.async {
+            self.debugLabel.text = str
+        }
+        
+      default:
+        break
+      }
+    }).disposed(by: disposeBag)
   }
   private func stopLoading() {
     DispatchQueue.main.async {
@@ -342,6 +374,8 @@ extension ViewController: UITableViewDataSource, UITableViewDelegate {
     guard let monitor = vm.item(at: indexPath) else { return }
     let vc = PeripheralInfoViewController()
     vc.vm = PeripheralInfoViewModel.init(with: monitor)
-    navigationController?.pushViewController(vc, animated: true)
+    if monitor.realmCard.isConnected && monitor.realmCard.isOn {
+      navigationController?.pushViewController(vc, animated: true)
+    }
   }
 }

@@ -17,6 +17,9 @@ final class MFRxBluetoothKitService {
   
   static let shared: MFRxBluetoothKitService = MFRxBluetoothKitService.init()
   
+  private lazy var batteryFirmwareZip = Observable.zip(batteryObserver, firmwareVersionObserver) {
+    return (batteryLevel: $0, firmware: $1)
+  }
   typealias Disconnection = (Peripheral, DisconnectionReason?)
   // MARK: - Public outputs
   var scanningOutput: Observable<Result<ScannedPeripheral, Error>> {
@@ -29,7 +32,7 @@ final class MFRxBluetoothKitService {
     return reConnectionSubject.asObservable()
   }
   var batteryObserver: Observable<Result<String, Error>> {
-    return batterySubject.asObservable()
+    return batterySubject.asObservable().share()
   }
   var macAddressObserver: Observable<Result<String, Error>> {
     return macAddressSubject.asObservable()
@@ -38,7 +41,7 @@ final class MFRxBluetoothKitService {
     return fsmParamsSubject.asObservable()
   }
   var firmwareVersionObserver: Observable<Result<String, Error>> {
-    return firmwareVersionSubject.asObservable()
+    return firmwareVersionSubject.asObservable().share()
   }
   var connectionParamsObserver: Observable<Result<String, Error>> {
     return connectionParamsSubject.asObservable()
@@ -61,7 +64,11 @@ final class MFRxBluetoothKitService {
   var reConnectingInProgressObserver: Observable<Result<Bool, Error>> {
     return reConnectingInProgressSubject.asObservable()
   }
+  var debugObserver: Observable<Result<String, Error>> {
+    return debugPublisher.asObservable()
+  }
   // MARK: - Private fields
+  private let debugPublisher = PublishSubject<Result<String, Error>>()
   private let scanningSubject = PublishSubject<Result<ScannedPeripheral, Error>>()
   private let disconnectionSubject = PublishSubject<Result<Peripheral, Error>>()
   private let reConnectionSubject = PublishSubject<Result<Monitor, Error>>()
@@ -85,7 +92,7 @@ final class MFRxBluetoothKitService {
   private var foundSafedome: Bool = false {
     didSet {
       if foundSafedome {
-        scanningDisposable?.dispose()
+        stopScanning()
       }
     }
   }
@@ -159,15 +166,16 @@ final class MFRxBluetoothKitService {
     scanningDisposable.dispose()
   }
   private func startScanningAndReconnect() {
-    guard let feched = RealmManager.shared.fetchAllMonitors() else {
+    guard let fetched = RealmManager.shared.fetchAllMonitors() else {
       return
     }
-    if feched.count < 1 {
+    if fetched.count < 1 {
       return
     }
     if let scanningDisposable = scanningDisposable {
       scanningDisposable.dispose()
     }
+    
     scanningDisposable = centralManager.observeState()
       .startWith(centralManager.state)
       .filter {
@@ -179,11 +187,13 @@ final class MFRxBluetoothKitService {
           return Observable.empty()
         }
         return self.centralManager.scanForPeripherals(withServices: nil)
-      }
+      }.takeWhile({ _ in
+        fetched.count > 0
+      })
       .subscribe(onNext: { [weak self] scannedPeripheral in
         let canConnect = scannedPeripheral.advertisementData.advertisementData["kCBAdvDataLocalName"] as? String == "safedome" && scannedPeripheral.rssi.doubleValue > (self?.kRSSIThreshold)!
-        AppDelegate.shared.log.debug("Scanned and find \(scannedPeripheral.peripheral.name ?? "") - \(scannedPeripheral.rssi.doubleValue)")
-        if canConnect {
+        AppDelegate.shared.log.debug("Reconnect Scanned and find \(scannedPeripheral.peripheral.name ?? "") - \(scannedPeripheral.rssi.doubleValue)")
+        if canConnect && RealmManager.shared.getRealmObject(for: scannedPeripheral.peripheral) != nil {
           self?.tryReconnect(to: [scannedPeripheral.peripheral.identifier])
           self?.foundSafedome = true
         }
@@ -207,9 +217,11 @@ final class MFRxBluetoothKitService {
   }
   
   func establishConnectionAndAddToConnectionDisposal(for peripheral: Peripheral) {
-    let disposable = peripheral.establishConnection().subscribe()
-    disposeBag.insert(disposable)
-    peripheralConnections[peripheral] = disposable
+    if RealmManager.shared.getRealmObject(for: peripheral) != nil {
+      let disposable = peripheral.establishConnection().subscribe()
+      disposeBag.insert(disposable)
+      peripheralConnections[peripheral] = disposable
+    }
   }
   // MARK: - Discovering Characteristics
   func discoverCharacteristics(for service: Service) {
@@ -260,7 +272,6 @@ final class MFRxBluetoothKitService {
   func observeDisconnect(for peripheral: Peripheral) {
     centralManager.observeDisconnect(for: peripheral).subscribe(onNext: { [unowned self] (peripheral, reason) in
       self.disconnect(peripheral)
-      AppDelegate.shared.log.debug("\(peripheral) got disconnected!!!")
       }, onError: { [unowned self] error in
         self.disconnectionSubject.onNext(Result.error(error))
     }).disposed(by: disposeBag)
@@ -289,7 +300,8 @@ extension MFRxBluetoothKitService {
             let nsData = NSData.init(data: value)
             var fsmParams: MFSFSMParameters = MFSFSMParameters()
             nsData.getBytes(&fsmParams, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters))
-            observer.onNext(Result.success(fsmParams == CardParameters.kDefaultFSMParameters))
+            let hexStr = char.characteristic.value?.hexadecimalString ?? ""
+            observer.onNext(Result.success(fsmParams == CardParameters.kDefaultFSMParameters || hexStr == CardParameters.kCommissionedFSMHexStr))
           }
           AppDelegate.shared.log.debug("Diagnostic read \(char.characteristic.value?.hexadecimalString ?? "")")
           }, onError: { error in
@@ -365,9 +377,11 @@ extension MFRxBluetoothKitService {
         if let value = char.characteristic.value {
           self?.batterySubject.onNext(Result.success("\(value[0])"))
           AppDelegate.shared.log.debug("Read Battery \(value[0])")
+          self?.debugPublisher.onNext(Result.success("Read Battery \(value[0])"))
         }
         }, onError: { [weak self] error in
           AppDelegate.shared.log.error("Read Battery: \(error)")
+          self?.debugPublisher.onNext(Result.success("Read Battery: \(error)"))
           self?.batterySubject.onNext(Result.error(error))
       })
     
@@ -423,9 +437,11 @@ extension MFRxBluetoothKitService {
           let firmware = String.init(data: value, encoding: String.Encoding.utf8)
           self?.firmwareVersionSubject.onNext(Result.success(firmware ?? "wrong encoding"))
           AppDelegate.shared.log.debug("Read Firmware: \(firmware ?? "wrong encoding")")
+          self?.debugPublisher.onNext(Result.success("Read Firmware: \(firmware ?? "wrong encoding")"))
         }
         }, onError: { [weak self] error in
           AppDelegate.shared.log.error("Read Firmware: \(error)")
+          self?.debugPublisher.onNext(Result.success("Read Firmware: \(error)"))
           self?.firmwareVersionSubject.onNext(Result.error(error))
       })
     
@@ -454,9 +470,11 @@ extension MFRxBluetoothKitService {
           let str = value.hexadecimalString
           self?.fsmParamsSubject.onNext(Result.success(str))
           AppDelegate.shared.log.debug("Read FSM: \(str)")
+          self?.debugPublisher.onNext(Result.success("Read FSM: \(str)"))
         }
         }, onError: { [weak self] error in
           AppDelegate.shared.log.error("Read FSM: \(error)")
+          self?.debugPublisher.onNext(Result.success("Read FSM: \(error)"))
           self?.fsmParamsSubject.onNext(Result.error(error))
       })
     
@@ -485,9 +503,11 @@ extension MFRxBluetoothKitService {
           let str = value.hexadecimalString
           self?.connectionParamsSubject.onNext(Result.success(str))
           AppDelegate.shared.log.debug("Read Connection Params: \(str)")
+          self?.debugPublisher.onNext(Result.success("Read Connection Params: \(str)"))
         }
         }, onError: { [weak self] error in
           AppDelegate.shared.log.error("Read Connection Params: \(error)")
+          self?.debugPublisher.onNext(Result.success("Read Connection Params: \(error)"))
           self?.connectionParamsSubject.onNext(Result.error(error))
       })
     
@@ -508,8 +528,10 @@ extension MFRxBluetoothKitService {
         let str = char.characteristic.value?.hexadecimalString
         observer.onNext(Result.success(str ?? ""))
         AppDelegate.shared.log.debug("write Default Connection Parameters success \(str ?? "")")
+        self.debugPublisher.onNext(Result.success("write Default Connection Parameters success"))
       }) { (error) in
         AppDelegate.shared.log.error("write Default Connection Parameters \(error)")
+        self.debugPublisher.onNext(Result.success("write Default Connection Parameters error"))
         observer.onNext(Result.error(error))
         }.disposed(by: self.disposeBag)
       
@@ -526,8 +548,13 @@ extension MFRxBluetoothKitService {
         let str = char.characteristic.value?.hexadecimalString
         observer.onNext(Result.success(str ?? ""))
         AppDelegate.shared.log.debug("Write FSM success: \(str ?? "")")
+        RealmManager.shared.beginWrite()
+        monitor.realmCard.fsmParameters = str ?? ""
+        RealmManager.shared.commitWrite()
+        self.debugPublisher.onNext(Result.success("Write FSM success"))
       }) { (error) in
         AppDelegate.shared.log.error("Write FSM: \(error)")
+        self.debugPublisher.onNext(Result.success("Write FSM error"))
         observer.onNext(Result.error(error))
         }.disposed(by: self.disposeBag)
       
@@ -556,57 +583,52 @@ extension MFRxBluetoothKitService {
     //Write the Connection parameters
     let monitorCopy = monitor
 
-    let zip = Observable.zip(batteryObserver, firmwareVersionObserver) {
-      return (batteryLevel: $0, firmware: $1)
-    }
     
-    zip.subscribe(onNext: {  (batteryLevel, firmware) in
-      switch batteryLevel {
-      case .success(let battery):
-        RealmManager.shared.beginWrite()
-        monitorCopy.realmCard.batteryLevel = battery
-        AppDelegate.shared.log.debug("Card binding battery read")
-      case .error(let error):
-        self.cardBindingSubject.onNext(Result.error(error))
-        break
-      }
-      switch firmware {
-      case .success(let firmware):
-        monitorCopy.realmCard.firmwareRevisionString = firmware
-        AppDelegate.shared.log.debug("Card binding firmware read")
-      case .error(let error):
-        self.cardBindingSubject.onNext(Result.error(error))
-        break
-      }
-      self.writeDefaultConnectionParameters(for: monitor).subscribe(onNext: { (result) in
-        switch result {
-        case .success(let connection):
-          AppDelegate.shared.log.debug("Card binding connection wirte")
-          monitorCopy.realmCard.connectionParameters = connection
-          self.writeFSMParameters(for: monitor)
+    self.writeDefaultConnectionParameters(for: monitor).subscribe(onNext: { (result) in
+      switch result {
+      case .success(let connection):
+        monitorCopy.realmCard.connectionParameters = connection
+        self.writeFSMParameters(for: monitor)
           .subscribe(onNext: { (result) in
             switch result {
             case .success(let fsm):
-              AppDelegate.shared.log.debug("Card binding fsm write")
               monitorCopy.realmCard.fsmParameters = fsm
               monitor.realmCard.isOn = true
               RealmManager.shared.commitWrite()
               MFFirmwareUpdateManager.shared.startChecking(for: monitorCopy)
               AppDelegate.shared.log.debug("Card binding Done!")
+              self.debugPublisher.onNext(Result.success("Card binding Done"))
               self.cardBindingSubject.onNext(Result.success(monitorCopy))
             case .error(let error):
               self.cardBindingSubject.onNext(Result.error(error))
             }
           }, onError: { (error) in
             self.cardBindingSubject.onNext(Result.error(error))
-          }).disposed(by: self.disposeBag)
-        case .error(let error):
-          self.cardBindingSubject.onNext(Result.error(error))
-          break
-        }
-      }, onError: { [weak self] (error) in
+          }).disposed(by: (self.disposeBag))
+      case .error(let error):
+        self.cardBindingSubject.onNext(Result.error(error))
+        break
+      }
+    }, onError: { [weak self] (error) in
+      self?.cardBindingSubject.onNext(Result.error(error))
+    }).disposed(by: (self.disposeBag))
+    
+    batteryFirmwareZip.subscribe(onNext: { [weak self] (batteryLevel, firmware) in
+      switch batteryLevel {
+      case .success(let battery):
+        RealmManager.shared.beginWrite()
+        monitorCopy.realmCard.batteryLevel = battery
+      case .error(let error):
         self?.cardBindingSubject.onNext(Result.error(error))
-      }).disposed(by: self.disposeBag)
+        break
+      }
+      switch firmware {
+      case .success(let firmware):
+        monitorCopy.realmCard.firmwareRevisionString = firmware
+      case .error(let error):
+        self?.cardBindingSubject.onNext(Result.error(error))
+        break
+      }
       }, onError: { [weak self] (error) in
         self?.cardBindingSubject.onNext(Result.error(error))
     }).disposed(by: self.disposeBag)
@@ -623,17 +645,22 @@ extension MFRxBluetoothKitService {
         case .success(let isMatch):
           if !isMatch {
             AppDelegate.shared.log.debug("Diagnostic read doesn't match => writing fsm again")
+            self.debugPublisher.onNext(Result.success("Diagnostic read doesn't match => writing fsm again"))
             self.writeFSMParameters(for: monitor).subscribe().disposed(by: self.disposeBag)
           } else {
             AppDelegate.shared.log.debug("Diagnostic matches => continue reconnecting")
+            self.debugPublisher.onNext(Result.success("Diagnostic matches => continue reconnecting"))
           }
         case .error(let error):
           AppDelegate.shared.log.error("Recconnect Read Diagnostic \(error)")
+          self.debugPublisher.onNext(Result.success("Recconnect Read Diagnostic \(error) - Diagnostic read error => writing fsm again"))
           AppDelegate.shared.log.error("Diagnostic read error => writing fsm again")
+          self.debugPublisher.onNext(Result.success("Diagnostic read error => writing fsm again"))
           self.writeFSMParameters(for: monitor).subscribe().disposed(by: self.disposeBag)
         }
       }, onError: { (error) in
         AppDelegate.shared.log.error("Recconnect Read Diagnostic \(error)")
+        self.debugPublisher.onNext(Result.success("Recconnect Read Diagnostic \(error)"))
         observer.onNext(Result.error(error))
       }).disposed(by: self.disposeBag)
       // write connection params
@@ -713,6 +740,7 @@ extension MFRxBluetoothKitService {
       self?.startScanningAndReconnect()
     }) { [weak self] (error) in
       AppDelegate.shared.log.error("turn off card: \(error)")
+      self?.debugPublisher.onNext(Result.success("turn off card: \(error)"))
       self?.turnOffCardSubject.onNext(Result.error(error))
       }.disposed(by: disposeBag)
     
@@ -724,10 +752,12 @@ extension MFRxBluetoothKitService {
     let data = NSData.init(bytes: &a, length: Int(Constant.PackageSizes.kSizeofMFSFSMParameters))
     let disposable = peripheral.writeValue(Data.init(referencing: data), for: DeviceCharacteristic.fsmParameters, type: CBCharacteristicWriteType.withResponse).subscribe(onSuccess: { [weak self] (char) in
       AppDelegate.shared.log.debug("decommission success: \(String(describing: char.characteristic.value?.hexadecimalString))")
+      self?.debugPublisher.onNext(Result.success("decommission success:"))
       self?.disconnect(peripheral)
       self?.unlinkingSubject.onNext(Result.success(true))
     }) { [weak self] (error) in
       AppDelegate.shared.log.error("decommission: \(error)")
+      self?.debugPublisher.onNext(Result.success("decommission: \(error)"))
       self?.unlinkingSubject.onNext(Result.error(error))
     }
     disposeBag.insert(disposable)
@@ -735,9 +765,6 @@ extension MFRxBluetoothKitService {
   
   private func unlink(_ monitor: Monitor) {
     let peripheral = monitor.peripheral
-    if !peripheral.isConnected {
-      centralManager.centralManager.connect(peripheral.peripheral, options: nil)
-    }
     doDecommission(for: peripheral)
   }
 }

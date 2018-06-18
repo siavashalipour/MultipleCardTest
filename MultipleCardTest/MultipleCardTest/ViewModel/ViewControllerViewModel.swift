@@ -46,7 +46,11 @@ class DashboardViewModel {
   var turnOffCardObserver: Observable<Result<Bool, Error>> {
     return turnOffCardSubject.asObservable()
   }
-  
+  var debugObserver: Observable<Result<String, Error>> {
+    return debugPublisher.asObservable()
+  }
+  // MARK: - Private fields
+  private let debugPublisher = PublishSubject<Result<String, Error>>()
   private var dataUpdatedPublisher = PublishSubject<Result<[Monitor], Error>>()
   private var disconnectPublisher = PublishSubject<Result<Peripheral, Error>>()
   private var reconnectionPublisher = PublishSubject<Result<Monitor, Error>>()
@@ -65,6 +69,9 @@ class DashboardViewModel {
   private var ds: [Monitor] = []
   
   func bind() {
+    bleKit.debugObserver.subscribe(onNext: { [weak self] (result) in
+      self?.debugPublisher.onNext(result)
+    }).disposed(by: disposeBag)
     
     bleKit.scanningOutput.subscribe { [weak self] (result) in
       if let element = result.element {
@@ -94,11 +101,10 @@ class DashboardViewModel {
       switch result {
       case .success(let monitor):
         self?.add(monitor)
-        self?.bleKit.observeDisconnect(for: monitor.peripheral)
         self?.startCardBindingSubject.onCompleted()
+        self?.bleKit.observeDisconnect(for: monitor.peripheral)
       case .error(let error):
         self?.dataUpdatedPublisher.onNext(Result.error(error))
-        self?.startCardBindingSubject.onCompleted()
       }
     }, onError: { [weak self] (error) in
       self?.dataUpdatedPublisher.onNext(Result.error(error))

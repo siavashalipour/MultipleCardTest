@@ -52,7 +52,7 @@ extension MFSFSMParameters: Equatable {
 }
 extension MFSFSMParameters {
   init() {
-    self.commissioned = 0
+    self.commissioned = 1
     self.fsmBehaviour = 0
     self.fsmConnectedTime = 0
     self.fsmAdvertiseTimeShort = 0
@@ -108,4 +108,6 @@ struct CardParameters {
                                                            ledBrightness: 100)
   
   static var kMFSFindMonitorParameters = MFSFindMonitorParameters(toneValue: 2)
+  
+  static let kCommissionedFSMHexStr = "0000005050010808080864"
 }

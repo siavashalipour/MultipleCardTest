@@ -61,6 +61,7 @@ class PeripheralInfoViewModel {
     self.peripheral = monitor.peripheral
 
   }
+
   func bind(updateBtn: Observable<Void>) {
     let battery = Int(selectedRealmPeripheral.batteryLevel) ?? 0
     let shouldHide = (updateManager.latestFirmwareDataOnDiskVersion == selectedRealmPeripheral.firmwareRevisionString) || battery < 20
@@ -71,17 +72,17 @@ class PeripheralInfoViewModel {
       self?.otaStatusNotification()
     }.disposed(by: bag)
     
-    MFRxBluetoothKitService.shared.observeDisconnect(for: peripheral)
-    MFRxBluetoothKitService.shared.disconnectionReasonOutput.subscribe(onNext: { (result) in
-      switch result {
-      case .success(let peripheral):
-        MFRxBluetoothKitService.shared.establishConnectionAndAddToConnectionDisposal(for: peripheral)
-      case .error(_):
-        break 
-      }
-    }, onError: { (error) in
-      
-    }).disposed(by: bag)
+//    MFRxBluetoothKitService.shared.observeDisconnect(for: peripheral)
+//    MFRxBluetoothKitService.shared.disconnectionReasonOutput.subscribe(onNext: { (result) in
+//      switch result {
+//      case .success(let peripheral):
+//        MFRxBluetoothKitService.shared.establishConnectionAndAddToConnectionDisposal(for: peripheral)
+//      case .error(let error):
+//        AppDelegate.shared.log.error("info view model disconnection observer result \(error)")
+//      }
+//    }, onError: { (error) in
+//      AppDelegate.shared.log.error("info view model disconnection observer \(error)")
+//    }).disposed(by: bag)
 
   }
   func title() -> String {
